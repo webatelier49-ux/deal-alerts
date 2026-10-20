@@ -8,6 +8,8 @@ Das Skript sucht alle 20 Minuten neu eingestellte Sofort-Kaufen-Angebote auf eBa
 | 🎮・retro-games | Retro-Spiele |
 | 👕・clothing-deals | Vintage-Kleidung von eBay (deine Vinted-Funde postest du dort selbst) |
 
+Ohne eBay-Keys postet der Bot reduzierte mydealz-Deals zu deinen Nischen (LEGO, Nike, Retro-Games, ohne Gewinn-Check, Regeln unter `hot_deals:`). Mit Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu.
+
 Eingebaut: Preisgrenze pro Suche, Ausschlusswörter (defekt, Fake, …), keine Doppelposts, max. 5 Posts pro Kanal und Lauf. Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
 
 ## 1. eBay-Developer-Zugang (einmalig, kostenlos)

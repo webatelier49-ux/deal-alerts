@@ -310,6 +310,58 @@ def search_query_from_title(title):
     return " ".join(words[:7])
 
 
+def run_hot_deals(cfg, state):
+    """Without eBay keys: post reduced mydealz deals that match the niche keywords, without a resale check."""
+    hc = cfg.get("hot_deals")
+    fc = cfg.get("flips") or {}
+    if not hc or not hc.get("enabled"):
+        return 0
+    seen = state.setdefault("flips_seen", {})  # shared with flips, so nothing is posted twice later
+    first_run = not state.get("flips_initialized")
+    posted = 0
+    for feed in fc.get("feeds", []):
+        try:
+            deals = fetch_retail_deals(feed)
+        except (requests.RequestException, ET.ParseError) as e:
+            print(f"Feed {feed} failed: {e}", file=sys.stderr)
+            continue
+        for d in deals:
+            if d["id"] in seen:
+                continue
+            seen[d["id"]] = now().isoformat()
+            if first_run or posted >= hc.get("max_posts_per_run", 5):
+                continue
+            if is_excluded(d["title"], cfg.get("exclude_words", []) + fc.get("exclude_words", [])):
+                continue
+            title = d["title"].lower()
+            rule = next((r for r in hc["rules"] if any(k in title for k in r["keywords"])), None)
+            if rule and post(rule["channel"], make_hot_embed(d, rule["channel"])):
+                posted += 1
+    state["flips_initialized"] = True
+    return posted
+
+
+def make_hot_embed(d, channel):
+    query = search_query_from_title(d["title"])
+    ebay_link = "https://www.ebay.de/sch/i.html?_nkw=" + requests.utils.quote(query) + "&LH_Sold=1&LH_Complete=1"
+    fields = [{"name": "Price", "value": f"€{d['price']:.2f}", "inline": True}]
+    if d.get("merchant"):
+        fields.append({"name": "Shop", "value": d["merchant"], "inline": True})
+    fields.append({"name": "Resale check", "value": f"[Sold prices on eBay]({ebay_link})", "inline": True})
+    embed = {
+        "title": ("🔥 " + d["title"])[:256],
+        "url": d["link"],
+        "color": COLORS[channel],
+        "fields": fields,
+        "footer": {"text": f"Price drop via mydealz · Check sold prices before buying · "
+                           f"{now().strftime('%d %b %Y, %H:%M UTC')}"},
+        "timestamp": now().isoformat(),
+    }
+    if d.get("image"):
+        embed["thumbnail"] = {"url": d["image"]}
+    return embed
+
+
 def run_flips(ebay, cfg, state):
     """Reduced retail deals whose typical eBay price leaves a profit after fees and shipping."""
     fc = cfg.get("flips")
@@ -423,12 +475,15 @@ def main():
     if sys.stdout is None:  # pythonw (Task Scheduler) has no console, so log to a file
         sys.stdout = sys.stderr = open(LOG_PATH, "a", encoding="utf-8")
     print(f"--- {now().isoformat()}")
-    if not os.environ.get("EBAY_CLIENT_ID") or not os.environ.get("EBAY_CLIENT_SECRET"):
-        print("eBay keys missing (EBAY_CLIENT_ID / EBAY_CLIENT_SECRET), skipping this run.")
-        return
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     state = load_state()
+    if not os.environ.get("EBAY_CLIENT_ID") or not os.environ.get("EBAY_CLIENT_SECRET"):
+        # Until the eBay keys exist, only matching mydealz price drops are posted.
+        hot = run_hot_deals(cfg, state)
+        save_state(state)
+        print(f"No eBay keys: eBay searches skipped; mydealz deals posted: {hot}")
+        return
     ebay = Ebay(cfg.get("marketplace", "EBAY_DE"), os.environ.get("EBAY_CAMPAIGN_ID") or None)
     posted = run_searches(ebay, cfg, state)
     flips = run_flips(ebay, cfg, state)

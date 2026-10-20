@@ -54,6 +54,19 @@ flips:
     - spotify
     - netflix
 
+# Solange keine eBay-Keys da sind: reduzierte mydealz-Deals zu deinen Nischen posten
+# (ohne Gewinn-Check). Mit Keys übernehmen die Flips oben, inklusive Gewinnrechnung.
+hot_deals:
+  enabled: true
+  max_posts_per_run: 5
+  rules:
+    - channel: deal-alerts
+      keywords: [lego]
+    - channel: clothing-deals
+      keywords: [nike, adidas, carhartt, sneaker, air max, dunk, air force, jordan, new balance]
+    - channel: retro-games
+      keywords: [game boy, gameboy, nintendo 64, n64, gamecube, snes, super nintendo, playstation 1, ps1, ps2, retro]
+
 searches:
   - name: Retro consoles
     query: game boy color konsole
