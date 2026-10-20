@@ -48,6 +48,7 @@ COLORS = {
     "clothing-deals": 0x3498DB,
     "free-deals": 0x2ECC71,
 }
+DEFAULT_COLOR = 0xE67E22
 SEEN_TTL_DAYS = 14
 CONDITIONS = {"Neu": "New", "Neu mit Etikett": "New with tags", "Neu ohne Etikett": "New without tags",
               "Gebraucht": "Used", "Sehr gut": "Very good", "Gut": "Good", "Akzeptabel": "Acceptable"}
@@ -200,7 +201,7 @@ def make_embed(item, search, channel, note=None):
     embed = {
         "title": item["title"][:256],
         "url": url,
-        "color": COLORS[channel],
+        "color": COLORS.get(channel, DEFAULT_COLOR),
         "fields": fields,
         "footer": {"text": footer},
         "timestamp": now().isoformat(),
@@ -213,8 +214,22 @@ def make_embed(item, search, channel, note=None):
     return embed
 
 
+def webhooks_from_env():
+    """WEBHOOKS secret: one "channel-name=https://discord.com/api/webhooks/..." per line."""
+    hooks = {}
+    for line in os.environ.get("WEBHOOKS", "").splitlines():
+        if "=" in line:
+            name, url = line.split("=", 1)
+            hooks[name.strip()] = url.strip()
+    return hooks
+
+
+def webhook_for(channel):
+    return webhooks_from_env().get(channel) or os.environ.get(WEBHOOK_ENV.get(channel, ""))
+
+
 def post(channel, embed):
-    hook = os.environ.get(WEBHOOK_ENV[channel])
+    hook = webhook_for(channel)
     if DRY_RUN or not hook:
         print(f"[{'dry-run' if DRY_RUN else 'no webhook'}] #{channel}: {embed['title']} {embed['url']}")
         return True
@@ -351,7 +366,7 @@ def make_hot_embed(d, channel):
     embed = {
         "title": ("🔥 " + d["title"])[:256],
         "url": d["link"],
-        "color": COLORS[channel],
+        "color": COLORS.get(channel, DEFAULT_COLOR),
         "fields": fields,
         "footer": {"text": f"Price drop via mydealz · Check sold prices before buying · "
                            f"{now().strftime('%d %b %Y, %H:%M UTC')}"},

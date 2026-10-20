@@ -38,6 +38,7 @@ jobs:
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
           EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
           EBAY_CAMPAIGN_ID: ${{ secrets.EBAY_CAMPAIGN_ID }}
+          WEBHOOKS: ${{ secrets.WEBHOOKS }}
           WEBHOOK_DEAL_ALERTS: ${{ secrets.WEBHOOK_DEAL_ALERTS }}
           WEBHOOK_RETRO_GAMES: ${{ secrets.WEBHOOK_RETRO_GAMES }}
           WEBHOOK_CLOTHING_DEALS: ${{ secrets.WEBHOOK_CLOTHING_DEALS }}
