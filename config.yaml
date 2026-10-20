@@ -42,6 +42,15 @@ flips:
     - https://www.mydealz.de/rss/gruppe/pokemon
     - https://www.mydealz.de/rss/gruppe/spielzeug
     - https://www.mydealz.de/rss/gruppe/elektronik
+    - https://www.mydealz.de/rss/gruppe/nintendo-switch
+    - https://www.mydealz.de/rss/gruppe/playstation
+    - https://www.mydealz.de/rss/gruppe/xbox
+    - https://www.mydealz.de/rss/gruppe/kleidung
+    - https://www.mydealz.de/rss/gruppe/sammelkarten
+    # weitere Schnäppchen-Seiten (öffentliche RSS-Feeds)
+    - https://www.dealdoktor.de/feed/
+    - https://www.mein-deal.com/feed/
+    - https://www.schnaeppchenfuchs.com/feed
   min_buy_price: 5
   max_buy_price: 150
   min_profit: 10            # EUR Gewinn nach Gebühren und Versand
@@ -72,53 +81,55 @@ routing:
   - channel: trading-cards
     keywords: [yu-gi-oh, yugioh, magic the gathering, mtg, one piece card game, lorcana, panini, sammelkarten]
   - channel: lego
-    keywords: [lego]
+    keywords: [lego, duplo]
   - channel: designer
     keywords: [stone island, cp company, c.p. company, moncler]
   - channel: the-north-face
     keywords: [north face, tnf, nuptse]
   - channel: ralph-lauren
-    keywords: [ralph lauren]
+    keywords: [ralph lauren, polo ralph lauren]
   - channel: levis
-    keywords: [levis, levi's, levi’s]
+    keywords: [levis, levi's, levi’s, levi]
   - channel: carhartt
-    keywords: [carhartt]
+    keywords: [carhartt, carhartt wip]
   - channel: vintage-nike
     keywords: [vintage nike, nike vintage]
   - channel: nike-dunks
-    keywords: [dunk, dunks]
+    keywords: [dunk, dunks, sb dunk]
   - channel: jordans
-    keywords: [jordan, jordans]
+    keywords: [jordan, jordans, air jordan]
   - channel: air-max
     keywords: [air max]
   - channel: new-balance
     keywords: [new balance]
   - channel: adidas
-    keywords: [adidas, samba, gazelle]
+    keywords: [adidas, samba, gazelle, adidas originals, spezial, handball spezial]
   - channel: consoles
-    keywords: [ps5, playstation 5, ps4, xbox series, switch oled, switch lite, switch 2, steam deck, konsole]
+    keywords: [ps5, playstation 5, ps4, xbox series, switch oled, switch lite, switch 2, steam deck, konsole, playstation portal, meta quest, controller, dualsense]
   - channel: other-consoles
-    keywords: [sega, mega drive, dreamcast, xbox 360, xbox classic]
+    keywords: [sega, mega drive, dreamcast, xbox 360, xbox classic, xbox, game pass]
   - channel: game-boy
     keywords: [game boy, gameboy]
   - channel: playstation
-    keywords: [ps1, ps2, psp, ps vita, playstation 1, playstation 2]
+    keywords: [ps1, ps2, psp, ps vita, playstation 1, playstation 2, playstation plus, playstation]
   - channel: nintendo
-    keywords: [n64, nintendo 64, snes, super nintendo, nes, gamecube, wii, nintendo ds, 3ds]
+    keywords: [n64, nintendo 64, snes, super nintendo, nes, gamecube, wii, nintendo ds, 3ds, nintendo switch, switch, zelda, mario, kirby, metroid, donkey kong, animal crossing, splatoon, amiibo, nintendo]
   - channel: retro-games
-    keywords: [retro, modul, cartridge]
+    keywords: [retro, modul, cartridge, classic mini, atari, arcade]
   - channel: retro-bundles
     keywords: [konvolut, sammlung]
   - channel: clothing-deals
-    keywords: [nike, sneaker, sneakers, tommy hilfiger, lacoste, champion, vintage]
+    keywords: [nike, sneaker, sneakers, tommy hilfiger, lacoste, champion, vintage, puma, reebok, asics, vans, converse, jacke, hoodie, sweatshirt, pullover, daunenjacke, winterjacke, jeans, calvin klein, hugo boss, columbia, patagonia, timberland]
   - channel: tech-flips
-    keywords: [kopfhörer, airpods, bose, sony wh, sony wf, ipad, iphone, apple watch, macbook, galaxy, gopro, dyson, kindle, lautsprecher, jbl]
+    keywords: [kopfhörer, airpods, bose, sony wh, sony wf, ipad, iphone, apple watch, macbook, galaxy, gopro, dyson, kindle, lautsprecher, jbl, samsung, apple, ssd, monitor, fernseher, oled, smartwatch, tablet, laptop, notebook, xiaomi, anker, logitech, powerbank, drohne, dji, beamer, grafikkarte, nvme]
 
 # Solange keine eBay-Keys da sind: reduzierte mydealz-Deals nach den Regeln oben posten
 # (ohne Gewinn-Check). Mit Keys übernehmen die Flips oben, inklusive Gewinnrechnung.
 hot_deals:
   enabled: true
-  max_posts_per_run: 10
+  max_posts_per_run: 30     # insgesamt pro Lauf
+  max_per_channel: 3        # pro Kanal und Lauf
+  max_age_hours: 48         # ältere Deals werden nicht mehr gepostet
 
 searches:
   - name: N64 games

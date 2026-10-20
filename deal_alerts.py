@@ -14,6 +14,7 @@ On a PC the same values can live in secrets.env next to this script (KEY=value p
 """
 
 import base64
+import email.utils
 import json
 import os
 import re
@@ -391,8 +392,16 @@ def fetch_retail_deals(feed_url):
             "price": price,
             "merchant": merchant_el.get("name") if merchant_el is not None else None,
             "image": media.get("url") if media is not None else None,
+            "published": parse_date(it.findtext("pubDate")),
         })
     return deals
+
+
+def parse_date(text):
+    try:
+        return email.utils.parsedate_to_datetime(text) if text else None
+    except (TypeError, ValueError):
+        return None
 
 
 def search_query_from_title(title):
@@ -404,14 +413,25 @@ def search_query_from_title(title):
 
 
 def run_hot_deals(cfg, state):
-    """Without eBay keys: post reduced mydealz deals that match the niche keywords, without a resale check."""
+    """Without eBay keys: post recent reduced deals that match a niche channel, without a resale check.
+
+    A deal is posted once (hot_posted). Recent deals that were read earlier but never posted still
+    qualify, so quiet channels fill up with current offers instead of staying empty.
+    """
     hc = cfg.get("hot_deals")
     fc = cfg.get("flips") or {}
     if not hc or not hc.get("enabled"):
         return 0
     seen = state.setdefault("flips_seen", {})  # shared with flips, so nothing is posted twice later
+    if "hot_posted" not in state and seen:
+        # Older versions didn't record what was posted. Only the very first batch is known
+        # to be unposted; treat everything read after it as posted so nothing repeats.
+        first_batch = min(seen.values())[:16]
+        state["hot_posted"] = {k: v for k, v in seen.items() if v[:16] != first_batch}
+    done = state.setdefault("hot_posted", {})
     first_run = not state.get("flips_initialized")
-    posted = 0
+    max_age = timedelta(hours=hc.get("max_age_hours", 48))
+    per_channel, posted = {}, 0
     for feed in fc.get("feeds", []):
         try:
             deals = fetch_retail_deals(feed)
@@ -420,17 +440,23 @@ def run_hot_deals(cfg, state):
             continue
         print(f"Feed {feed}: {len(deals)} deals, {sum(d['id'] not in seen for d in deals)} new")
         for d in deals:
-            if d["id"] in seen:
+            seen.setdefault(d["id"], now().isoformat())
+            if first_run or d["id"] in done or posted >= hc.get("max_posts_per_run", 30):
                 continue
-            seen[d["id"]] = now().isoformat()
-            if first_run or posted >= hc.get("max_posts_per_run", 5):
+            if d.get("published") and now() - d["published"] > max_age:
                 continue
             if is_excluded(d["title"], cfg.get("exclude_words", []) + fc.get("exclude_words", [])):
                 continue
             channel = route(d["title"], cfg)
-            if channel and post(channel, make_hot_embed(d, channel)):
+            if not channel or per_channel.get(channel, 0) >= hc.get("max_per_channel", 3):
+                continue
+            if post(channel, make_hot_embed(d, channel)):
+                done[d["id"]] = now().isoformat()
+                per_channel[channel] = per_channel.get(channel, 0) + 1
                 posted += 1
     state["flips_initialized"] = True
+    cutoff = (now() - timedelta(days=SEEN_TTL_DAYS)).isoformat()
+    state["hot_posted"] = {k: v for k, v in done.items() if v >= cutoff}
     return posted
 
 
