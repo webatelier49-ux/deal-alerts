@@ -290,6 +290,7 @@ def post(channel, embed):
     msg = send(hook, {"username": "Deal Alerts", "embeds": [embed]})
     if msg is None:
         return False
+    print(f"Posted to #{channel}: {embed.get('title', '')[:80]}")
     if channel != DIGEST_CHANNEL:
         guild = guild_id_for(hook)
         link = f"https://discord.com/channels/{guild}/{msg['channel_id']}/{msg['id']}" if guild else embed["url"]
