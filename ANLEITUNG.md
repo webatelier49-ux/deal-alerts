@@ -9,7 +9,7 @@ Kanäle (Name ohne Emoji, so wie im Secret `WEBHOOKS`):
 - **Kleidung:** carhartt, levis, ralph-lauren, the-north-face, vintage-nike, designer (Stone Island, CP Company, Moncler), clothing-deals (alles andere)
 - **Sammeln:** lego, pokemon-cards, trading-cards
 - **tech-flips:** Elektronik-Flips mit Gewinnrechnung
-- **deal-alerts:** Top-Deals aus allen Kanälen (max. 3 pro Lauf)
+- **deal-alerts:** nach jedem Lauf eine Übersicht aller neuen Deals mit Link zum Kanal und zum Post
 
 eBay-Suchen stehen unter `searches:`, die Zuordnung von mydealz-Deals und Flips nach Stichwort unter `routing:` in `config.yaml`.
 
@@ -48,7 +48,7 @@ Der Bot liest die heißen Deals von mydealz (RSS), sucht jedes Produkt auf eBay.
 
 ## Suchen anpassen
 
-Alles steht in `config.yaml`: Suchbegriff, Kanal, Höchstpreis und ein grober üblicher Verkaufspreis (für den Rabatt in der Karte; ab 60 % Rabatt geht der Deal zusätzlich nach deal-alerts).
+Alles steht in `config.yaml`: Suchbegriff, Kanal, Höchstpreis und ein grober üblicher Verkaufspreis (für den Rabatt in der Karte).
 
 ## Hinweise
 

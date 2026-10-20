@@ -4,7 +4,7 @@
 # channel: Kanalname ohne Emoji, wie im Secret WEBHOOKS (z. B. lego, nike-dunks)
 # max_price: Höchstpreis in EUR (ohne Versand)
 # ref_price: grober üblicher Verkaufspreis in EUR. Daraus wird der Rabatt
-#            berechnet. Ab top_deals.min_discount geht der Deal zusätzlich nach deal-alerts.
+#            berechnet.
 
 marketplace: EBAY_DE
 item_location_country: DE
@@ -24,12 +24,7 @@ exclude_words:                # Titel mit diesen Wörtern werden ignoriert
   - leerhülle
   - suche
 
-# Die besten Funde gehen zusätzlich als Kopie nach deal-alerts.
-top_deals:
-  channel: deal-alerts
-  min_discount: 0.6         # eBay-Angebot mind. 60 % unter dem üblichen Preis
-  min_flip_profit: 25       # Flip mit mind. 25 EUR geschätztem Gewinn
-  max_per_run: 3
+# deal-alerts bekommt nach jedem Lauf eine Übersicht aller neuen Deals mit Link zum Kanal und Post.
 
 # Flips: reduzierte Angebote aus Shops (über mydealz), die auf eBay deutlich teurer verkauft werden.
 flips:

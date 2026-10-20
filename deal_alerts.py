@@ -253,23 +253,72 @@ def webhook_for(channel):
     return webhooks_from_env().get(channel) or os.environ.get(WEBHOOK_ENV.get(channel, ""))
 
 
-def post(channel, embed):
-    hook = webhook_for(channel)
-    if DRY_RUN or not hook:
-        print(f"[{'dry-run' if DRY_RUN else 'no webhook'}] #{channel}: {embed['title']} {embed['url']}")
-        return True
-    payload = {"username": "Deal Alerts", "embeds": [embed]}
+DIGEST_CHANNEL = "deal-alerts"
+_digest = []        # deals posted to niche channels this run, announced in deal-alerts at the end
+_guild_ids = {}
+
+
+def guild_id_for(hook):
+    if hook not in _guild_ids:
+        try:
+            _guild_ids[hook] = requests.get(hook, timeout=30).json().get("guild_id")
+        except (requests.RequestException, ValueError):
+            _guild_ids[hook] = None
+    return _guild_ids[hook]
+
+
+def send(hook, payload):
+    """Post to a webhook and return the created message, or None."""
     for _ in range(3):
-        r = requests.post(hook, json=payload, timeout=30)
+        r = requests.post(hook, params={"wait": "true"}, json=payload, timeout=30)
         if r.status_code == 429:
             time.sleep(float(r.json().get("retry_after", 2)))
             continue
         if r.ok:
             time.sleep(1)  # stay well below Discord's webhook rate limit
-            return True
+            return r.json()
         print(f"Discord error {r.status_code}: {r.text[:200]}", file=sys.stderr)
+        return None
+    return None
+
+
+def post(channel, embed):
+    hook = webhook_for(channel)
+    if DRY_RUN or not hook:
+        print(f"[{'dry-run' if DRY_RUN else 'no webhook'}] #{channel}: {embed['title']} {embed['url']}")
+        return True
+    msg = send(hook, {"username": "Deal Alerts", "embeds": [embed]})
+    if msg is None:
         return False
-    return False
+    if channel != DIGEST_CHANNEL:
+        guild = guild_id_for(hook)
+        link = f"https://discord.com/channels/{guild}/{msg['channel_id']}/{msg['id']}" if guild else embed["url"]
+        price = next((f["value"] for f in embed.get("fields", []) if f["name"] in ("Price", "Buy price")), "")
+        _digest.append({"channel_id": msg["channel_id"], "title": embed["title"], "price": price, "link": link})
+    return True
+
+
+def send_digest():
+    """One short notice in deal-alerts per run, pointing to every new deal in the niche channels."""
+    hook = webhook_for(DIGEST_CHANNEL)
+    if not _digest or not hook or DRY_RUN:
+        return 0
+    lines = [f"<#{d['channel_id']}> · [{d['title'][:80]}]({d['link']})" + (f" · {d['price']}" if d["price"] else "")
+             for d in _digest]
+    chunks, cur = [], ""
+    for line in lines:
+        if len(cur) + len(line) + 1 > 3900:
+            chunks.append(cur)
+            cur = ""
+        cur += line + "\n"
+    chunks.append(cur)
+    for i, text in enumerate(chunks):
+        title = f"🆕 {len(_digest)} new deal{'s' if len(_digest) != 1 else ''}" if i == 0 else None
+        embed = {"description": text, "color": COLORS[DIGEST_CHANNEL], "timestamp": now().isoformat()}
+        if title:
+            embed["title"] = title
+        send(hook, {"username": "Deal Alerts", "embeds": [embed]})
+    return len(_digest)
 
 
 def run_searches(ebay, cfg, state):
@@ -528,6 +577,7 @@ def main():
         # Until the eBay keys exist, only matching mydealz price drops are posted.
         hot = run_hot_deals(cfg, state)
         save_state(state)
+        send_digest()
         print(f"No eBay keys: eBay searches skipped; mydealz deals posted: {hot}")
         return
     ebay = Ebay(cfg.get("marketplace", "EBAY_DE"), os.environ.get("EBAY_CAMPAIGN_ID") or None)
@@ -535,6 +585,7 @@ def main():
     flips = run_flips(ebay, cfg, state)
     free = run_free_deals(ebay, cfg, state)
     save_state(state)
+    send_digest()
     print(f"Posted: {posted or 'nothing new'}; flips: {flips}; free-deals: {free}")
 
 
