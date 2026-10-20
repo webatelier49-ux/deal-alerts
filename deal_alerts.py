@@ -418,6 +418,7 @@ def run_hot_deals(cfg, state):
         except (requests.RequestException, ET.ParseError) as e:
             print(f"Feed {feed} failed: {e}", file=sys.stderr)
             continue
+        print(f"Feed {feed}: {len(deals)} deals, {sum(d['id'] not in seen for d in deals)} new")
         for d in deals:
             if d["id"] in seen:
                 continue

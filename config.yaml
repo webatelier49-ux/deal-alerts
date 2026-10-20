@@ -31,9 +31,17 @@ flips:
   enabled: true
   channel: tech-flips       # Flips ohne passende Nische landen hier
   feeds:
-    - https://www.mydealz.de/rss/deals          # alle heißen Deals
-    - https://www.mydealz.de/rss/gruppe/lego    # LEGO-Deals (fehlerhafte Feeds werden übersprungen)
-    - https://www.mydealz.de/rss/gruppe/sneaker # Sneaker-Deals
+    # Feeds, die es nicht gibt, werden übersprungen und im Log gemeldet.
+    - https://www.mydealz.de/rss/new                  # alle neuen Deals, nicht nur heiße
+    - https://www.mydealz.de/rss/deals                # heiße Deals
+    - https://www.mydealz.de/rss/gruppe/lego
+    - https://www.mydealz.de/rss/gruppe/sneaker
+    - https://www.mydealz.de/rss/gruppe/gaming
+    - https://www.mydealz.de/rss/gruppe/videospiele
+    - https://www.mydealz.de/rss/gruppe/fashion-accessoires
+    - https://www.mydealz.de/rss/gruppe/pokemon
+    - https://www.mydealz.de/rss/gruppe/spielzeug
+    - https://www.mydealz.de/rss/gruppe/elektronik
   min_buy_price: 5
   max_buy_price: 150
   min_profit: 10            # EUR Gewinn nach Gebühren und Versand
@@ -110,7 +118,7 @@ routing:
 # (ohne Gewinn-Check). Mit Keys übernehmen die Flips oben, inklusive Gewinnrechnung.
 hot_deals:
   enabled: true
-  max_posts_per_run: 8
+  max_posts_per_run: 10
 
 searches:
   - name: N64 games

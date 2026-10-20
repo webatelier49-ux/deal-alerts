@@ -54,5 +54,5 @@ Alles steht in `config.yaml`: Suchbegriff, Kanal, Höchstpreis und ein grober ü
 
 - eBay erlaubt, dass Angebotsdaten höchstens 6 Stunden alt sind. Deshalb steht in jeder Karte der Prüfzeitpunkt und „Price and availability may change“.
 - Vinted wird bewusst nicht automatisch abgefragt, weil das gegen die Vinted-AGB verstößt.
-- GitHub kann geplante Läufe um einige Minuten verzögern. Öffentliche Repos haben unbegrenzt kostenlose Actions-Minuten.
+- Ein Lauf bleibt ca. 5,5 Stunden aktiv und prüft selbst alle 20 Minuten (GitHubs eigener Zeitplan ist zu unzuverlässig). Stündlich startet GitHub bei Bedarf den nächsten. Die Merkliste liegt im Branch `state`.
 - GitHub pausiert geplante Läufe in öffentlichen Repos nach 60 Tagen ohne Commit. Dann einfach im Actions-Tab wieder aktivieren.

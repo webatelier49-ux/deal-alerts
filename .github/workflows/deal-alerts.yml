@@ -1,23 +1,29 @@
 name: Deal Alerts
 
+# GitHub's own cron is unreliable on small repos (runs get skipped for an hour or more),
+# so one job stays up for ~5.5 hours and runs the bot every 20 minutes itself.
+# The cron below only (re)starts that loop; extra starts wait in the queue.
 on:
   schedule:
-    - cron: "*/20 * * * *"   # every 20 min; GitHub may delay scheduled runs a few minutes
+    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Print posts instead of sending them"
+        description: "Print posts instead of sending them (runs once)"
         type: boolean
-        default: true
+        default: false
 
 concurrency:
   group: deal-alerts
   cancel-in-progress: false
 
+permissions:
+  contents: write   # state.json is kept on the "state" branch
+
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -25,14 +31,16 @@ jobs:
           python-version: "3.12"
       - run: pip install requests pyyaml
 
-      # state.json (already posted items) is carried between runs via the Actions cache.
+      # Older runs kept state in the Actions cache; the state branch wins when it exists.
       - uses: actions/cache/restore@v4
         with:
           path: state.json
           key: deal-state-${{ github.run_id }}
           restore-keys: deal-state-
+      - name: Restore state
+        run: git fetch -q origin state && git show origin/state:state.json > state.json || echo "no state branch yet"
 
-      - run: python deal_alerts.py
+      - name: Run every 20 minutes
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
@@ -42,9 +50,21 @@ jobs:
           WEBHOOK_DEAL_ALERTS: ${{ secrets.WEBHOOK_DEAL_ALERTS }}
           WEBHOOK_RETRO_GAMES: ${{ secrets.WEBHOOK_RETRO_GAMES }}
           WEBHOOK_CLOTHING_DEALS: ${{ secrets.WEBHOOK_CLOTHING_DEALS }}
-          WEBHOOK_FREE_DEALS: ${{ secrets.WEBHOOK_FREE_DEALS }}
-
-      - uses: actions/cache/save@v4
-        with:
-          path: state.json
-          key: deal-state-${{ github.run_id }}
+        run: |
+          save_state() {
+            tmp=$(mktemp -d)
+            cp state.json "$tmp/"
+            git -C "$tmp" init -q -b state
+            git -C "$tmp" add state.json
+            git -C "$tmp" -c user.name="deal-bot" -c user.email="deal-bot@users.noreply.github.com" commit -qm "Update state"
+            git -C "$tmp" push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" state
+            rm -rf "$tmp"
+          }
+          end=$((SECONDS + 330 * 60))
+          while true; do
+            python deal_alerts.py || echo "run failed, retrying next round"
+            [ -f state.json ] && [ "$DRY_RUN" != "1" ] && save_state
+            [ "$DRY_RUN" = "1" ] && break
+            [ $((SECONDS + 20 * 60)) -ge $end ] && break
+            sleep 1200
+          done
