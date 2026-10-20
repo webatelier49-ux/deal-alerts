@@ -168,6 +168,31 @@ def is_excluded(title, words):
     return any(w.lower() in t for w in words)
 
 
+def has_keyword(title, keywords):
+    t = title.lower()
+    return any(re.search(r"(?<!\w)" + re.escape(k.lower()) + r"(?!\w)", t) for k in keywords)
+
+
+def route(title, cfg):
+    """First routing rule whose keyword appears in the title, as a whole word."""
+    for rule in cfg.get("routing", []):
+        if has_keyword(title, rule["keywords"]):
+            return rule["channel"]
+    return None
+
+
+_top_posted = 0
+
+
+def post_top_copy(cfg, embed, is_top):
+    """Best finds also go to the general top-deals channel, a few per run at most."""
+    global _top_posted
+    top = cfg.get("top_deals") or {}
+    if is_top and top.get("channel") and _top_posted < top.get("max_per_run", 3):
+        if post(top["channel"], embed):
+            _top_posted += 1
+
+
 def discount(price, ref):
     if not ref:
         return 0.0
@@ -271,6 +296,9 @@ def run_searches(ebay, cfg, state):
             if post(channel, make_embed(item, search, channel)):
                 posted_per_channel[channel] = posted_per_channel.get(channel, 0) + 1
                 price = float(item["price"]["value"])
+                top = cfg.get("top_deals") or {}
+                if search.get("ref_price") and discount(price, search["ref_price"]) >= top.get("min_discount", 2):
+                    post_top_copy(cfg, make_embed(item, search, top["channel"], "🔥 Top deal"), True)
                 state["candidates"].append({
                     "item_id": item_id,
                     "search": search["name"],
@@ -348,9 +376,8 @@ def run_hot_deals(cfg, state):
                 continue
             if is_excluded(d["title"], cfg.get("exclude_words", []) + fc.get("exclude_words", [])):
                 continue
-            title = d["title"].lower()
-            rule = next((r for r in hc["rules"] if any(k in title for k in r["keywords"])), None)
-            if rule and post(rule["channel"], make_hot_embed(d, rule["channel"])):
+            channel = route(d["title"], cfg)
+            if channel and post(channel, make_hot_embed(d, channel)):
                 posted += 1
     state["flips_initialized"] = True
     return posted
@@ -417,8 +444,12 @@ def run_flips(ebay, cfg, state):
             profit = resale * (1 - fc.get("ebay_fee", 0.13)) - fc.get("shipping_cost", 5) - d["price"]
             if profit < fc.get("min_profit", 10) or profit / d["price"] < fc.get("min_roi", 0.25):
                 continue
-            if post(fc.get("channel", "deal-alerts"), make_flip_embed(d, query, resale, profit, len(prices), fc)):
+            channel = route(d["title"], cfg) or fc.get("channel", "tech-flips")
+            if post(channel, make_flip_embed(d, query, resale, profit, len(prices), fc)):
                 posted += 1
+                top = cfg.get("top_deals") or {}
+                post_top_copy(cfg, make_flip_embed(d, query, resale, profit, len(prices), fc),
+                              profit >= top.get("min_flip_profit", float("inf")))
     state["flips_initialized"] = True
     cutoff = (now() - timedelta(days=SEEN_TTL_DAYS)).isoformat()
     state["flips_seen"] = {k: v for k, v in seen.items() if v >= cutoff}

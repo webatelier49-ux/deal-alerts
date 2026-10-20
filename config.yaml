@@ -1,10 +1,10 @@
 # Deal-Alerts: Suchen, Preisgrenzen und Filter.
 # Platzhalter-Werte, bis Ludwig seine Suchbegriffe und Preise bestätigt.
 #
-# channel: deal-alerts | retro-games | clothing-deals
+# channel: Kanalname ohne Emoji, wie im Secret WEBHOOKS (z. B. lego, nike-dunks)
 # max_price: Höchstpreis in EUR (ohne Versand)
 # ref_price: grober üblicher Verkaufspreis in EUR. Daraus wird der Rabatt
-#            berechnet, der die Auswahl für free-deals bestimmt.
+#            berechnet. Ab top_deals.min_discount geht der Deal zusätzlich nach deal-alerts.
 
 marketplace: EBAY_DE
 item_location_country: DE
@@ -24,10 +24,17 @@ exclude_words:                # Titel mit diesen Wörtern werden ignoriert
   - leerhülle
   - suche
 
+# Die besten Funde gehen zusätzlich als Kopie nach deal-alerts.
+top_deals:
+  channel: deal-alerts
+  min_discount: 0.6         # eBay-Angebot mind. 60 % unter dem üblichen Preis
+  min_flip_profit: 25       # Flip mit mind. 25 EUR geschätztem Gewinn
+  max_per_run: 3
+
 # Flips: reduzierte Angebote aus Shops (über mydealz), die auf eBay deutlich teurer verkauft werden.
 flips:
   enabled: true
-  channel: deal-alerts
+  channel: tech-flips       # Flips ohne passende Nische landen hier
   feeds:
     - https://www.mydealz.de/rss/deals          # alle heißen Deals
     - https://www.mydealz.de/rss/gruppe/lego    # LEGO-Deals (fehlerhafte Feeds werden übersprungen)
@@ -54,55 +61,278 @@ flips:
     - spotify
     - netflix
 
-# Solange keine eBay-Keys da sind: reduzierte mydealz-Deals zu deinen Nischen posten
+# Welche Titel in welchen Kanal gehen (mydealz-Deals und Flips).
+# Die erste passende Regel gewinnt, Wörter zählen nur als ganze Wörter.
+routing:
+  - channel: pokemon-cards
+    keywords: [pokemon karten, pokémon karten, pokemon tcg, pokémon tcg, booster, elite trainer box, top trainer box]
+  - channel: trading-cards
+    keywords: [yu-gi-oh, yugioh, magic the gathering, mtg, one piece card game, lorcana, panini, sammelkarten]
+  - channel: lego
+    keywords: [lego]
+  - channel: designer
+    keywords: [stone island, cp company, c.p. company, moncler]
+  - channel: the-north-face
+    keywords: [north face, tnf, nuptse]
+  - channel: ralph-lauren
+    keywords: [ralph lauren]
+  - channel: levis
+    keywords: [levis, levi's, levi’s]
+  - channel: carhartt
+    keywords: [carhartt]
+  - channel: vintage-nike
+    keywords: [vintage nike, nike vintage]
+  - channel: nike-dunks
+    keywords: [dunk, dunks]
+  - channel: jordans
+    keywords: [jordan, jordans]
+  - channel: air-max
+    keywords: [air max]
+  - channel: new-balance
+    keywords: [new balance]
+  - channel: adidas
+    keywords: [adidas, samba, gazelle]
+  - channel: consoles
+    keywords: [ps5, playstation 5, ps4, xbox series, switch oled, switch lite, switch 2, steam deck, konsole]
+  - channel: other-consoles
+    keywords: [sega, mega drive, dreamcast, xbox 360, xbox classic]
+  - channel: game-boy
+    keywords: [game boy, gameboy]
+  - channel: playstation
+    keywords: [ps1, ps2, psp, ps vita, playstation 1, playstation 2]
+  - channel: nintendo
+    keywords: [n64, nintendo 64, snes, super nintendo, nes, gamecube, wii, nintendo ds, 3ds]
+  - channel: retro-games
+    keywords: [retro, modul, cartridge]
+  - channel: retro-bundles
+    keywords: [konvolut, sammlung]
+  - channel: clothing-deals
+    keywords: [nike, sneaker, sneakers, tommy hilfiger, lacoste, champion, vintage]
+  - channel: tech-flips
+    keywords: [kopfhörer, airpods, bose, sony wh, sony wf, ipad, iphone, apple watch, macbook, galaxy, gopro, dyson, kindle, lautsprecher, jbl]
+
+# Solange keine eBay-Keys da sind: reduzierte mydealz-Deals nach den Regeln oben posten
 # (ohne Gewinn-Check). Mit Keys übernehmen die Flips oben, inklusive Gewinnrechnung.
 hot_deals:
   enabled: true
-  max_posts_per_run: 5
-  rules:
-    - channel: deal-alerts
-      keywords: [lego]
-    - channel: clothing-deals
-      keywords: [nike, adidas, carhartt, sneaker, air max, dunk, air force, jordan, new balance]
-    - channel: retro-games
-      keywords: [game boy, gameboy, nintendo 64, n64, gamecube, snes, super nintendo, playstation 1, ps1, ps2, retro]
+  max_posts_per_run: 8
 
 searches:
-  - name: Retro consoles
-    query: game boy color konsole
-    channel: deal-alerts
-    max_price: 35
-    ref_price: 70
+  - name: N64 games
+    query: nintendo 64 spiel
+    channel: nintendo
+    max_price: 20
+    ref_price: 40
+
+  - name: SNES games
+    query: snes spiel
+    channel: nintendo
+    max_price: 20
+    ref_price: 40
+
+  - name: GameCube games
+    query: gamecube spiel
+    channel: nintendo
+    max_price: 15
+    ref_price: 35
 
   - name: Game Boy games
     query: game boy spiel modul
+    channel: game-boy
+    max_price: 15
+    ref_price: 30
+
+  - name: Game Boy Color
+    query: game boy color konsole
+    channel: game-boy
+    max_price: 35
+    ref_price: 70
+
+  - name: Game Boy Advance SP
+    query: game boy advance sp
+    channel: game-boy
+    max_price: 45
+    ref_price: 90
+
+  - name: PS1 games
+    query: playstation 1 spiel ps1
+    channel: playstation
+    max_price: 12
+    ref_price: 25
+
+  - name: PS2 games
+    query: ps2 spiel
+    channel: playstation
+    max_price: 8
+    ref_price: 20
+
+  - name: Nintendo Switch
+    query: nintendo switch konsole
+    channel: consoles
+    max_price: 150
+    ref_price: 230
+
+  - name: PS4 consoles
+    query: ps4 konsole
+    channel: consoles
+    max_price: 100
+    ref_price: 160
+
+  - name: Sega Mega Drive
+    query: sega mega drive
+    channel: other-consoles
+    max_price: 40
+    ref_price: 80
+
+  - name: Xbox classic games
+    query: xbox classic spiel
+    channel: other-consoles
+    max_price: 8
+    ref_price: 20
+
+  - name: NES games
+    query: nes spiel
     channel: retro-games
     max_price: 15
     ref_price: 30
 
-  - name: N64 games
-    query: nintendo 64 spiel
+  - name: PSP games
+    query: psp spiel
     channel: retro-games
-    max_price: 20
-    ref_price: 40
+    max_price: 8
+    ref_price: 18
 
-  - name: PS1 games
-    query: playstation 1 spiel ps1
-    channel: retro-games
-    max_price: 12
-    ref_price: 25
+  - name: Retro bundles
+    query: retro spiele konvolut
+    channel: retro-bundles
+    max_price: 40
+    ref_price: 90
 
-  - name: Vintage Nike
-    query: vintage nike sweatshirt
-    channel: clothing-deals
-    max_price: 15
-    ref_price: 40
+  - name: Nintendo bundles
+    query: nintendo konvolut
+    channel: retro-bundles
+    max_price: 50
+    ref_price: 110
+
+  - name: Nike Dunk Low
+    query: nike dunk low
+    channel: nike-dunks
+    max_price: 60
+    ref_price: 120
+
+  - name: Air Jordan 1
+    query: air jordan 1
+    channel: jordans
+    max_price: 70
+    ref_price: 140
+
+  - name: Air Max 90
+    query: nike air max 90
+    channel: air-max
+    max_price: 40
+    ref_price: 90
+
+  - name: Air Max 1
+    query: nike air max 1
+    channel: air-max
+    max_price: 40
+    ref_price: 90
+
+  - name: New Balance 550
+    query: new balance 550
+    channel: new-balance
+    max_price: 45
+    ref_price: 90
+
+  - name: New Balance 2002R
+    query: new balance 2002r
+    channel: new-balance
+    max_price: 50
+    ref_price: 100
+
+  - name: Adidas Samba
+    query: adidas samba
+    channel: adidas
+    max_price: 40
+    ref_price: 80
+
+  - name: Adidas Campus
+    query: adidas campus
+    channel: adidas
+    max_price: 35
+    ref_price: 70
 
   - name: Carhartt jackets
     query: carhartt jacke
-    channel: clothing-deals
+    channel: carhartt
     max_price: 30
     ref_price: 80
+
+  - name: Carhartt Detroit
+    query: carhartt detroit jacket
+    channel: carhartt
+    max_price: 50
+    ref_price: 120
+
+  - name: Levi's 501
+    query: levis 501
+    channel: levis
+    max_price: 15
+    ref_price: 40
+
+  - name: Levi's trucker
+    query: levis trucker jacke
+    channel: levis
+    max_price: 20
+    ref_price: 50
+
+  - name: Ralph Lauren knit
+    query: ralph lauren pullover
+    channel: ralph-lauren
+    max_price: 20
+    ref_price: 50
+
+  - name: Polo shirts
+    query: polo ralph lauren hemd
+    channel: ralph-lauren
+    max_price: 12
+    ref_price: 35
+
+  - name: Nuptse
+    query: north face nuptse
+    channel: the-north-face
+    max_price: 80
+    ref_price: 160
+
+  - name: TNF fleece
+    query: north face fleece
+    channel: the-north-face
+    max_price: 20
+    ref_price: 50
+
+  - name: Vintage Nike sweats
+    query: vintage nike sweatshirt
+    channel: vintage-nike
+    max_price: 15
+    ref_price: 40
+
+  - name: Vintage Nike track jackets
+    query: vintage nike trainingsjacke
+    channel: vintage-nike
+    max_price: 20
+    ref_price: 50
+
+  - name: Stone Island
+    query: stone island
+    channel: designer
+    max_price: 80
+    ref_price: 180
+
+  - name: CP Company
+    query: cp company jacke
+    channel: designer
+    max_price: 70
+    ref_price: 160
 
   - name: Vintage Adidas
     query: vintage adidas trainingsjacke
@@ -110,32 +340,44 @@ searches:
     max_price: 15
     ref_price: 40
 
-  - name: LEGO bundles
-    query: lego konvolut
-    channel: deal-alerts
-    max_price: 25
-    ref_price: 50
-
-  - name: LEGO sets sealed
-    query: lego set neu ovp
-    channel: deal-alerts
-    max_price: 20
-    ref_price: 40
-
-  - name: Nike Air Max
-    query: nike air max herren
-    channel: clothing-deals
-    max_price: 40
-    ref_price: 90
-
-  - name: Nike Dunk
-    query: nike dunk low
-    channel: clothing-deals
-    max_price: 60
-    ref_price: 120
-
-  - name: Nike Air Force 1
+  - name: Air Force 1
     query: nike air force 1
     channel: clothing-deals
     max_price: 35
     ref_price: 80
+
+  - name: LEGO bundles
+    query: lego konvolut
+    channel: lego
+    max_price: 25
+    ref_price: 50
+
+  - name: LEGO sealed sets
+    query: lego set neu ovp
+    channel: lego
+    max_price: 20
+    ref_price: 40
+
+  - name: LEGO Star Wars minifigs
+    query: lego star wars minifiguren
+    channel: lego
+    max_price: 15
+    ref_price: 35
+
+  - name: Pokémon collections
+    query: pokemon karten sammlung
+    channel: pokemon-cards
+    max_price: 25
+    ref_price: 60
+
+  - name: Yu-Gi-Oh collections
+    query: yugioh karten sammlung
+    channel: trading-cards
+    max_price: 20
+    ref_price: 50
+
+  - name: MTG collections
+    query: magic the gathering sammlung
+    channel: trading-cards
+    max_price: 25
+    ref_price: 60

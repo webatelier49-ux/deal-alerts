@@ -2,13 +2,18 @@
 
 Das Skript sucht alle 20 Minuten neu eingestellte Sofort-Kaufen-Angebote auf eBay.de (offizielle Browse API) und postet passende Deals als englische Karten in die Discord-Kanäle.
 
-| Kanal | Inhalt |
-|---|---|
-| 🚨・deal-alerts | allgemeine Deals (z. B. Retro-Konsolen) und 💸 Flips: reduzierte Shop-Angebote, die auf eBay deutlich teurer verkauft werden |
-| 🎮・retro-games | Retro-Spiele |
-| 👕・clothing-deals | Vintage-Kleidung von eBay (deine Vinted-Funde postest du dort selbst) |
+Kanäle (Name ohne Emoji, so wie im Secret `WEBHOOKS`):
 
-Ohne eBay-Keys postet der Bot reduzierte mydealz-Deals zu deinen Nischen (LEGO, Nike, Retro-Games, ohne Gewinn-Check, Regeln unter `hot_deals:`). Mit Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu.
+- **Gaming:** nintendo, game-boy, playstation, consoles, other-consoles (Sega, Xbox), retro-games, retro-bundles
+- **Sneaker:** nike-dunks, jordans, air-max, new-balance, adidas
+- **Kleidung:** carhartt, levis, ralph-lauren, the-north-face, vintage-nike, designer (Stone Island, CP Company, Moncler), clothing-deals (alles andere)
+- **Sammeln:** lego, pokemon-cards, trading-cards
+- **tech-flips:** Elektronik-Flips mit Gewinnrechnung
+- **deal-alerts:** Top-Deals aus allen Kanälen (max. 3 pro Lauf)
+
+eBay-Suchen stehen unter `searches:`, die Zuordnung von mydealz-Deals und Flips nach Stichwort unter `routing:` in `config.yaml`.
+
+Ohne eBay-Keys postet der Bot reduzierte mydealz-Deals zu deinen Nischen (ohne Gewinn-Check, verteilt nach `routing:`). Mit Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu.
 
 Eingebaut: Preisgrenze pro Suche, Ausschlusswörter (defekt, Fake, …), keine Doppelposts, max. 5 Posts pro Kanal und Lauf. Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
 
@@ -31,7 +36,7 @@ Im Repository unter Settings → Secrets and variables → Actions → „New re
 
 - `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`
 - `EBAY_CAMPAIGN_ID` (optional)
-- `WEBHOOK_DEAL_ALERTS`, `WEBHOOK_RETRO_GAMES`, `WEBHOOK_CLOTHING_DEALS`
+- `WEBHOOKS`: eine Zeile pro Kanal im Format `kanalname=webhook-url` (z. B. `lego=https://discord.com/api/webhooks/...`)
 
 ## 4. Testen und starten
 
@@ -43,7 +48,7 @@ Der Bot liest die heißen Deals von mydealz (RSS), sucht jedes Produkt auf eBay.
 
 ## Suchen anpassen
 
-Alles steht in `config.yaml`: Suchbegriff, Kanal, Höchstpreis und ein grober üblicher Verkaufspreis (für den Rabatt in der Karte und die Auswahl der free-deals).
+Alles steht in `config.yaml`: Suchbegriff, Kanal, Höchstpreis und ein grober üblicher Verkaufspreis (für den Rabatt in der Karte; ab 60 % Rabatt geht der Deal zusätzlich nach deal-alerts).
 
 ## Hinweise
 
