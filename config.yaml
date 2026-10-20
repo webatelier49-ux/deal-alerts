@@ -9,7 +9,7 @@
 marketplace: EBAY_DE
 item_location_country: DE
 max_posts_per_run: 5          # pro Kanal, gegen Spam
-free_deals_per_day: 2
+free_deals_per_day: 0      # free-deals-Kanal gibt es nicht mehr; >0 schaltet ihn wieder ein
 free_deals_delay_hours: 24
 
 exclude_words:                # Titel mit diesen Wörtern werden ignoriert

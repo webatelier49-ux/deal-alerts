@@ -7,7 +7,6 @@ Das Skript sucht alle 20 Minuten neu eingestellte Sofort-Kaufen-Angebote auf eBa
 | 🚨・deal-alerts | allgemeine Deals (z. B. Retro-Konsolen) und 💸 Flips: reduzierte Shop-Angebote, die auf eBay deutlich teurer verkauft werden |
 | 🎮・retro-games | Retro-Spiele |
 | 👕・clothing-deals | Vintage-Kleidung von eBay (deine Vinted-Funde postest du dort selbst) |
-| 🎁・free-deals | 1 bis 2 der besten Premium-Deals pro Tag, 24 h später, vor dem Posten neu von eBay abgerufen |
 
 Eingebaut: Preisgrenze pro Suche, Ausschlusswörter (defekt, Fake, …), keine Doppelposts, max. 5 Posts pro Kanal und Lauf. Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
 
@@ -30,7 +29,7 @@ Im Repository unter Settings → Secrets and variables → Actions → „New re
 
 - `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`
 - `EBAY_CAMPAIGN_ID` (optional)
-- `WEBHOOK_DEAL_ALERTS`, `WEBHOOK_RETRO_GAMES`, `WEBHOOK_CLOTHING_DEALS`, `WEBHOOK_FREE_DEALS`
+- `WEBHOOK_DEAL_ALERTS`, `WEBHOOK_RETRO_GAMES`, `WEBHOOK_CLOTHING_DEALS`
 
 ## 4. Testen und starten
 
