@@ -1,0 +1,128 @@
+# Deal-Alerts: Suchen, Preisgrenzen und Filter.
+# Platzhalter-Werte, bis Ludwig seine Suchbegriffe und Preise bestätigt.
+#
+# channel: deal-alerts | retro-games | clothing-deals
+# max_price: Höchstpreis in EUR (ohne Versand)
+# ref_price: grober üblicher Verkaufspreis in EUR. Daraus wird der Rabatt
+#            berechnet, der die Auswahl für free-deals bestimmt.
+
+marketplace: EBAY_DE
+item_location_country: DE
+max_posts_per_run: 5          # pro Kanal, gegen Spam
+free_deals_per_day: 2
+free_deals_delay_hours: 24
+
+exclude_words:                # Titel mit diesen Wörtern werden ignoriert
+  - defekt
+  - kaputt
+  - bastler
+  - ersatzteil
+  - fake
+  - replica
+  - nur hülle
+  - nur ovp
+  - leerhülle
+  - suche
+
+# Flips: reduzierte Angebote aus Shops (über mydealz), die auf eBay deutlich teurer verkauft werden.
+flips:
+  enabled: true
+  channel: deal-alerts
+  feeds:
+    - https://www.mydealz.de/rss/deals          # alle heißen Deals
+    - https://www.mydealz.de/rss/gruppe/lego    # LEGO-Deals (fehlerhafte Feeds werden übersprungen)
+    - https://www.mydealz.de/rss/gruppe/sneaker # Sneaker-Deals
+  min_buy_price: 5
+  max_buy_price: 150
+  min_profit: 10            # EUR Gewinn nach Gebühren und Versand
+  min_roi: 0.25             # mindestens 25 % auf den Einkaufspreis
+  ebay_fee: 0.13            # gewerbliche Verkäufer ca. 11-13 %, privat 0
+  shipping_cost: 5          # was du für den Versand ausgibst
+  min_comparables: 5        # so viele vergleichbare eBay-Angebote nötig
+  max_resale_factor: 4      # eBay-Preis > 4x Kaufpreis = vermutlich falsches Produkt
+  max_posts_per_run: 3
+  exclude_words:
+    - gutschein
+    - abo
+    - vertrag
+    - tarif
+    - gratis
+    - kostenlos
+    - cashback
+    - streaming
+    - app
+    - spotify
+    - netflix
+
+searches:
+  - name: Retro consoles
+    query: game boy color konsole
+    channel: deal-alerts
+    max_price: 35
+    ref_price: 70
+
+  - name: Game Boy games
+    query: game boy spiel modul
+    channel: retro-games
+    max_price: 15
+    ref_price: 30
+
+  - name: N64 games
+    query: nintendo 64 spiel
+    channel: retro-games
+    max_price: 20
+    ref_price: 40
+
+  - name: PS1 games
+    query: playstation 1 spiel ps1
+    channel: retro-games
+    max_price: 12
+    ref_price: 25
+
+  - name: Vintage Nike
+    query: vintage nike sweatshirt
+    channel: clothing-deals
+    max_price: 15
+    ref_price: 40
+
+  - name: Carhartt jackets
+    query: carhartt jacke
+    channel: clothing-deals
+    max_price: 30
+    ref_price: 80
+
+  - name: Vintage Adidas
+    query: vintage adidas trainingsjacke
+    channel: clothing-deals
+    max_price: 15
+    ref_price: 40
+
+  - name: LEGO bundles
+    query: lego konvolut
+    channel: deal-alerts
+    max_price: 25
+    ref_price: 50
+
+  - name: LEGO sets sealed
+    query: lego set neu ovp
+    channel: deal-alerts
+    max_price: 20
+    ref_price: 40
+
+  - name: Nike Air Max
+    query: nike air max herren
+    channel: clothing-deals
+    max_price: 40
+    ref_price: 90
+
+  - name: Nike Dunk
+    query: nike dunk low
+    channel: clothing-deals
+    max_price: 60
+    ref_price: 120
+
+  - name: Nike Air Force 1
+    query: nike air force 1
+    channel: clothing-deals
+    max_price: 35
+    ref_price: 80

@@ -1,0 +1,49 @@
+name: Deal Alerts
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # every 20 min; GitHub may delay scheduled runs a few minutes
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print posts instead of sending them"
+        type: boolean
+        default: true
+
+concurrency:
+  group: deal-alerts
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pyyaml
+
+      # state.json (already posted items) is carried between runs via the Actions cache.
+      - uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: deal-state-${{ github.run_id }}
+          restore-keys: deal-state-
+
+      - run: python deal_alerts.py
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          EBAY_CLIENT_ID: ${{ secrets.EBAY_CLIENT_ID }}
+          EBAY_CLIENT_SECRET: ${{ secrets.EBAY_CLIENT_SECRET }}
+          EBAY_CAMPAIGN_ID: ${{ secrets.EBAY_CAMPAIGN_ID }}
+          WEBHOOK_DEAL_ALERTS: ${{ secrets.WEBHOOK_DEAL_ALERTS }}
+          WEBHOOK_RETRO_GAMES: ${{ secrets.WEBHOOK_RETRO_GAMES }}
+          WEBHOOK_CLOTHING_DEALS: ${{ secrets.WEBHOOK_CLOTHING_DEALS }}
+          WEBHOOK_FREE_DEALS: ${{ secrets.WEBHOOK_FREE_DEALS }}
+
+      - uses: actions/cache/save@v4
+        with:
+          path: state.json
+          key: deal-state-${{ github.run_id }}

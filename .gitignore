@@ -1,0 +1,4 @@
+state.json
+__pycache__/
+secrets.env
+deal_alerts.log
