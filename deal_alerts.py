@@ -423,6 +423,9 @@ def main():
     if sys.stdout is None:  # pythonw (Task Scheduler) has no console, so log to a file
         sys.stdout = sys.stderr = open(LOG_PATH, "a", encoding="utf-8")
     print(f"--- {now().isoformat()}")
+    if not os.environ.get("EBAY_CLIENT_ID") or not os.environ.get("EBAY_CLIENT_SECRET"):
+        print("eBay keys missing (EBAY_CLIENT_ID / EBAY_CLIENT_SECRET), skipping this run.")
+        return
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     state = load_state()
