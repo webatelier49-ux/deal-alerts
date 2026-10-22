@@ -43,13 +43,9 @@ WEBHOOK_ENV = {
     "clothing-deals": "WEBHOOK_CLOTHING_DEALS",
     "free-deals": "WEBHOOK_FREE_DEALS",
 }
-COLORS = {
-    "deal-alerts": 0xE74C3C,
-    "retro-games": 0x9B59B6,
-    "clothing-deals": 0x3498DB,
-    "free-deals": 0x2ECC71,
-}
-DEFAULT_COLOR = 0xE67E22
+COLORS = {}      # every channel uses the gold brand color
+
+DEFAULT_COLOR = 0xD4AF37   # gold, matches the server branding
 SEEN_TTL_DAYS = 14
 CONDITIONS = {"Neu": "New", "Neu mit Etikett": "New with tags", "Neu ohne Etikett": "New without tags",
               "Gebraucht": "Used", "Sehr gut": "Very good", "Gut": "Good", "Akzeptabel": "Acceptable"}
@@ -86,6 +82,8 @@ def load_state():
 
 def save_state(state):
     cutoff = (now() - timedelta(days=SEEN_TTL_DAYS)).isoformat()
+    state["messages"] = [m for m in state.get("messages", []) + _messages if m[2] >= cutoff]
+    _messages.clear()
     state["seen"] = {k: v for k, v in state["seen"].items() if v >= cutoff}
     with open(STATE_PATH, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=1)
@@ -137,17 +135,20 @@ class Ebay:
         r.raise_for_status()
         return r.json().get("itemSummaries", [])
 
-    def market_prices(self, query):
-        """Asking prices of new, fixed-price listings in Germany: a rough proxy for what an item resells for."""
+    def market_prices(self, query, new_only=True, skip_id=None):
+        """Asking prices of fixed-price listings in Germany: a rough proxy for what an item resells for."""
+        filters = "buyingOptions:{FIXED_PRICE},priceCurrency:EUR,itemLocationCountry:DE"
+        if new_only:
+            filters += ",conditions:{NEW}"
         r = requests.get(
             SEARCH_URL,
             headers=self._headers(),
-            params={"q": query, "limit": 50,
-                    "filter": "buyingOptions:{FIXED_PRICE},conditions:{NEW},priceCurrency:EUR,itemLocationCountry:DE"},
+            params={"q": query, "limit": 50, "filter": filters},
             timeout=30,
         )
         r.raise_for_status()
-        return [float(i["price"]["value"]) for i in r.json().get("itemSummaries", []) if "price" in i]
+        return [float(i["price"]["value"]) for i in r.json().get("itemSummaries", [])
+                if "price" in i and i.get("itemId") != skip_id]
 
     def get_item(self, item_id):
         r = requests.get(ITEM_URL.format(item_id), headers=self._headers(), timeout=30)
@@ -185,58 +186,42 @@ def route(title, cfg):
 _top_posted = 0
 
 
-def post_top_copy(cfg, embed, is_top):
-    """Best finds also go to the general top-deals channel, a few per run at most."""
-    global _top_posted
-    top = cfg.get("top_deals") or {}
-    if is_top and top.get("channel") and _top_posted < top.get("max_per_run", 3):
-        if post(top["channel"], embed):
-            _top_posted += 1
-
-
 def discount(price, ref):
     if not ref:
         return 0.0
     return max(0.0, 1 - price / ref)
 
 
-def make_embed(item, search, channel, note=None):
+def make_embed(item, search, channel, market, n):
     price = float(item["price"]["value"])
-    ship = shipping_cost(item)
+    ship = shipping_cost(item) or 0
+    total = price + ship
     url = item.get("itemAffiliateWebUrl") or item["itemWebUrl"]
+    off = discount(total, market)
     fields = [
-        {"name": "Price", "value": f"€{price:.2f}", "inline": True},
-        {"name": "Shipping",
-         "value": "Free" if ship == 0 else (f"€{ship:.2f}" if ship is not None else "See listing"),
+        {"name": "Price", "value": f"**€{price:.2f}**" + (f" + €{ship:.2f} shipping" if ship else " · free shipping"),
          "inline": True},
+        {"name": "eBay market", "value": f"~€{market:.0f} ({n} listings)", "inline": True},
+        {"name": "You save", "value": f"~€{market - total:.0f} ({off:.0%})", "inline": True},
     ]
+    details = []
     if item.get("condition"):
-        fields.append({"name": "Condition", "value": CONDITIONS.get(item["condition"], item["condition"]),
-                       "inline": True})
-    ref = search.get("ref_price")
-    if ref:
-        fields.append({"name": "Est. resale",
-                       "value": f"~€{ref} ({discount(price, ref):.0%} below)", "inline": True})
+        details.append(CONDITIONS.get(item["condition"], item["condition"]))
     seller = item.get("seller") or {}
     if seller.get("feedbackPercentage"):
-        fields.append({"name": "Seller",
-                       "value": f"{seller['feedbackPercentage']}% ({seller.get('feedbackScore', '?')})",
-                       "inline": True})
-    checked = now().strftime("%d %b %Y, %H:%M UTC")
-    footer = f"eBay.de · {search['name']} · Checked {checked} · Price and availability may change"
+        details.append(f"Seller {seller['feedbackPercentage']}% ({seller.get('feedbackScore', '?')})")
     embed = {
+        "author": {"name": f"🔥 {off:.0%} below market · {search['name']}"},
         "title": item["title"][:256],
         "url": url,
         "color": COLORS.get(channel, DEFAULT_COLOR),
         "fields": fields,
-        "footer": {"text": footer},
+        "footer": {"text": " · ".join(details + ["eBay.de", "Price may change"])},
         "timestamp": now().isoformat(),
     }
-    if note:
-        embed["description"] = note
     img = (item.get("image") or {}).get("imageUrl")
     if img:
-        embed["thumbnail"] = {"url": img}
+        embed["image"] = {"url": re.sub(r"s-l\d+\.", "s-l1600.", img)}  # full-size product photo
     return embed
 
 
@@ -256,6 +241,7 @@ def webhook_for(channel):
 
 DIGEST_CHANNEL = "deal-alerts"
 _digest = []        # deals posted to niche channels this run, announced in deal-alerts at the end
+_messages = []      # (channel, message id) of everything posted this run, so cleanup.py can remove it later
 _guild_ids = {}
 
 
@@ -292,6 +278,7 @@ def post(channel, embed):
     if msg is None:
         return False
     print(f"Posted to #{channel}: {embed.get('title', '')[:80]}")
+    _messages.append([channel, msg["id"], now().isoformat()])
     if channel != DIGEST_CHANNEL:
         guild = guild_id_for(hook)
         link = f"https://discord.com/channels/{guild}/{msg['channel_id']}/{msg['id']}" if guild else embed["url"]
@@ -316,47 +303,98 @@ def send_digest():
     chunks.append(cur)
     for i, text in enumerate(chunks):
         title = f"🆕 {len(_digest)} new deal{'s' if len(_digest) != 1 else ''}" if i == 0 else None
-        embed = {"description": text, "color": COLORS[DIGEST_CHANNEL], "timestamp": now().isoformat()}
+        embed = {"description": text, "color": DEFAULT_COLOR, "timestamp": now().isoformat()}
         if title:
             embed["title"] = title
-        send(hook, {"username": "Deal Alerts", "embeds": [embed]})
+        msg = send(hook, {"username": "Deal Alerts", "embeds": [embed]})
+        if msg:
+            _messages.append([DIGEST_CHANNEL, msg["id"], now().isoformat()])
     return len(_digest)
 
 
+def item_query(title):
+    """First words of an eBay title, without condition and filler words, as a search for the same product."""
+    words = [w for w in re.findall(r"[\w+'-]+", title.lower())
+             if len(w) > 1 and w not in QUERY_STOPWORDS]
+    return " ".join(words[:6])
+
+
+QUERY_STOPWORDS = {"neu", "new", "ovp", "top", "gebraucht", "zustand", "sehr", "gut", "guter", "selten", "rar",
+                   "original", "originalverpackt", "versand", "kostenlos", "inkl", "mit", "und", "der", "die",
+                   "das", "für", "fur", "wie", "sammlung", "konvolut", "getestet", "tested", "pal", "blitzversand"}
+
+
+def good_seller(item, qc):
+    seller = item.get("seller") or {}
+    try:
+        pct = float(seller.get("feedbackPercentage", 0))
+        score = int(seller.get("feedbackScore", 0))
+    except (TypeError, ValueError):
+        return False
+    return pct >= qc.get("min_seller_feedback", 97) and score >= qc.get("min_seller_score", 20)
+
+
 def run_searches(ebay, cfg, state):
+    """New eBay listings, posted only when they are clearly below what the same product sells for on eBay.
+
+    Each search's new listings are pre-sorted by how far they are below the search's rough ref_price.
+    The best ones are then checked against current eBay prices for that exact product; only a big,
+    plausible gap (not a different item or an accessory) gets posted.
+    """
     first_run = not state.get("initialized")
-    posted_per_channel = {}
+    qc = cfg.get("quality") or {}
+    exclude = cfg.get("exclude_words", []) + qc.get("exclude_words", [])
+    candidates = []
     for search in cfg["searches"]:
         try:
             items = ebay.search(search["query"], search["max_price"], cfg.get("item_location_country"))
         except requests.RequestException as e:
             print(f"Search '{search['name']}' failed: {e}", file=sys.stderr)
             continue
-        channel = search["channel"]
         for item in items:
             item_id = item["itemId"]
             if item_id in state["seen"]:
                 continue
             state["seen"][item_id] = now().isoformat()
-            if first_run:
-                continue  # first run only fills the seen list, so members don't get a flood of old listings
-            if is_excluded(item["title"], cfg.get("exclude_words", [])):
+            if first_run or is_excluded(item["title"], exclude) or not good_seller(item, qc):
                 continue
-            if posted_per_channel.get(channel, 0) >= cfg.get("max_posts_per_run", 5):
-                continue
-            if post(channel, make_embed(item, search, channel)):
-                posted_per_channel[channel] = posted_per_channel.get(channel, 0) + 1
-                price = float(item["price"]["value"])
-                top = cfg.get("top_deals") or {}
-                if search.get("ref_price") and discount(price, search["ref_price"]) >= top.get("min_discount", 2):
-                    post_top_copy(cfg, make_embed(item, search, top["channel"], "🔥 Top deal"), True)
-                state["candidates"].append({
-                    "item_id": item_id,
-                    "search": search["name"],
-                    "score": discount(price, search.get("ref_price")),
-                    "posted_at": now().isoformat(),
-                })
+            total = float(item["price"]["value"]) + (shipping_cost(item) or 0)
+            if search.get("ref_price") and total > search["ref_price"] * (1 - qc.get("min_discount", 0.3)):
+                continue  # not even cheap compared to the rough reference price
+            candidates.append((discount(total, search.get("ref_price")), total, item, search))
     state["initialized"] = True
+
+    posted_per_channel, lookups = {}, 0
+    for _, total, item, search in sorted(candidates, key=lambda c: -c[0]):
+        channel = search["channel"]
+        if lookups >= qc.get("max_lookups_per_run", 20):
+            break
+        if posted_per_channel.get(channel, 0) >= cfg.get("max_posts_per_run", 2):
+            continue
+        query = item_query(item["title"])
+        if len(query.split()) < 2:
+            continue
+        lookups += 1
+        try:
+            prices = ebay.market_prices(query, new_only=False, skip_id=item["itemId"])
+        except requests.RequestException as e:
+            print(f"eBay lookup '{query}' failed: {e}", file=sys.stderr)
+            continue
+        if len(prices) < qc.get("min_comparables", 8):
+            continue  # too few matches to know the market price
+        market = statistics.median(prices)
+        off = discount(total, market)
+        if off < qc.get("min_discount", 0.3) or off > qc.get("max_discount", 0.75) \
+                or market - total < qc.get("min_saving", 15):
+            continue  # too small a saving, or so big that it's probably a different item
+        if post(channel, make_embed(item, search, channel, market, len(prices))):
+            posted_per_channel[channel] = posted_per_channel.get(channel, 0) + 1
+            state["candidates"].append({
+                "item_id": item["itemId"],
+                "search": search["name"],
+                "score": off,
+                "posted_at": now().isoformat(),
+            })
     return posted_per_channel
 
 
@@ -477,7 +515,7 @@ def make_hot_embed(d, channel):
         "timestamp": now().isoformat(),
     }
     if d.get("image"):
-        embed["thumbnail"] = {"url": d["image"]}
+        embed["image"] = {"url": d["image"]}
     return embed
 
 
@@ -525,9 +563,6 @@ def run_flips(ebay, cfg, state):
             if post(channel, make_flip_embed(d, query, resale, profit, len(prices), fc)):
                 posted += 1
                 state.setdefault("hot_posted", {})[d["id"]] = now().isoformat()  # never repost as plain deal
-                top = cfg.get("top_deals") or {}
-                post_top_copy(cfg, make_flip_embed(d, query, resale, profit, len(prices), fc),
-                              profit >= top.get("min_flip_profit", float("inf")))
     state["flips_initialized"] = True
     cutoff = (now() - timedelta(days=SEEN_TTL_DAYS)).isoformat()
     state["flips_seen"] = {k: v for k, v in seen.items() if v >= cutoff}
@@ -535,26 +570,24 @@ def run_flips(ebay, cfg, state):
 
 
 def make_flip_embed(d, query, resale, profit, n, fc):
-    ebay_link = "https://www.ebay.de/sch/i.html?_nkw=" + requests.utils.quote(query) + "&LH_ItemCondition=1000&LH_BIN=1"
-    checked = now().strftime("%d %b %Y, %H:%M UTC")
+    ebay_link = "https://www.ebay.de/sch/i.html?_nkw=" + requests.utils.quote(query) + "&LH_Sold=1&LH_Complete=1"
     embed = {
-        "title": ("💸 " + d["title"])[:256],
+        "author": {"name": f"💸 Flip · ~€{profit:.0f} profit ({profit / d['price']:.0%})"},
+        "title": d["title"][:256],
         "url": d["link"],
-        "color": 0xF1C40F,
+        "color": DEFAULT_COLOR,
         "fields": [
-            {"name": "Buy price", "value": f"€{d['price']:.2f}" + (f" at {d['merchant']}" if d.get("merchant") else ""),
+            {"name": "Buy", "value": f"**€{d['price']:.2f}**" + (f" at {d['merchant']}" if d.get("merchant") else ""),
              "inline": True},
-            {"name": "eBay price (median)", "value": f"~€{resale:.2f} ({n} listings)", "inline": True},
-            {"name": "Est. profit", "value": f"~€{profit:.2f} ({profit / d['price']:.0%})", "inline": True},
-            {"name": "Check on eBay", "value": f"[Compare listings]({ebay_link})", "inline": False},
+            {"name": "Sells on eBay", "value": f"~€{resale:.0f} ({n} listings)", "inline": True},
+            {"name": "Profit", "value": f"~€{profit:.0f} after fees · [sold prices]({ebay_link})", "inline": True},
         ],
-        "footer": {"text": f"Deal via mydealz · Profit after ~{fc.get('ebay_fee', 0.13):.0%} eBay fees and "
-                           f"€{fc.get('shipping_cost', 5)} shipping · Estimate from current asking prices, "
-                           f"verify before buying · {checked}"},
+        "footer": {"text": f"After ~{fc.get('ebay_fee', 0.13):.0%} eBay fees and €{fc.get('shipping_cost', 5)} "
+                           f"shipping · Check sold prices before buying"},
         "timestamp": now().isoformat(),
     }
     if d.get("image"):
-        embed["thumbnail"] = {"url": d["image"]}
+        embed["image"] = {"url": d["image"]}
     return embed
 
 
@@ -587,8 +620,7 @@ def run_free_deals(ebay, cfg, state):
         item = ebay.get_item(c["item_id"])
         if not item or item.get("estimatedAvailabilities", [{}])[0].get("estimatedAvailabilityStatus") == "OUT_OF_STOCK":
             continue
-        note = "Shared with Premium members 24 h ago. Get alerts the minute they drop with Premium."
-        if post("free-deals", make_embed(item, search, "free-deals", note)):
+        if post("free-deals", make_embed(item, search, "free-deals", search.get("ref_price") or float(item["price"]["value"]), 0)):
             state["free_posted"] = {today: done_today + 1}
             state["candidates"].extend(r for r in ready[i + 1:])
             return 1
@@ -602,6 +634,7 @@ def main():
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     state = load_state()
+    state.setdefault("quality_since", now().isoformat())  # cleanup.py removes bot posts older than this
     ebay = None
     if os.environ.get("EBAY_CLIENT_ID") and os.environ.get("EBAY_CLIENT_SECRET"):
         try:
@@ -617,7 +650,7 @@ def main():
         return
     posted = run_searches(ebay, cfg, state)
     flips = run_flips(ebay, cfg, state)
-    hot = run_hot_deals(cfg, state)  # shop deals without a profit check keep the niche channels busy
+    hot = run_hot_deals(cfg, state)  # off by default: shop deals without a profit check
     free = run_free_deals(ebay, cfg, state)
     save_state(state)
     send_digest()

@@ -1,0 +1,34 @@
+name: Clean up old posts
+
+# Deletes bot posts made before the stricter quality filter (quality_since in state.json).
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Only count what would be deleted"
+        type: boolean
+        default: false
+      cutoff:
+        description: "Optional ISO time, e.g. 2026-10-22T17:00:00+00:00 (default: start of the quality filter)"
+        type: string
+        default: ""
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pyyaml
+      - name: Restore state
+        run: git fetch -q origin state && git show origin/state:state.json > state.json
+      - name: Delete old posts
+        env:
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          CUTOFF: ${{ inputs.cutoff }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          WEBHOOKS: ${{ secrets.WEBHOOKS }}
+        run: python cleanup.py

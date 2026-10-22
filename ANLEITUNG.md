@@ -13,9 +13,15 @@ Kanäle (Name ohne Emoji, so wie im Secret `WEBHOOKS`):
 
 eBay-Suchen stehen unter `searches:`, die Zuordnung von mydealz-Deals und Flips nach Stichwort unter `routing:` in `config.yaml`.
 
-Der Bot postet reduzierte Shop-Deals von mydealz, DealDoktor und mein-deal zu deinen Nischen (ohne Gewinn-Check, verteilt nach `routing:`, max. 3 pro Kanal und Lauf, nur Deals der letzten 48 Stunden, jeder Deal nur einmal). Mit eBay-Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu. Fällt eBay aus, laufen die Shop-Deals weiter.
+**Nur gute Deals:** Jedes neue eBay-Angebot wird mit den aktuellen eBay-Preisen für genau dieses Produkt verglichen. Gepostet wird nur, was mindestens 30 % und 15 € unter dem Marktpreis liegt, von Verkäufern mit mind. 97 % positiven Bewertungen. Mehr als 75 % drunter wird verworfen (meist Zubehör oder ein anderes Produkt). Shop-Deals (mydealz, DealDoktor, mein-deal) kommen nur als Flip, wenn nach eBay-Gebühren und Versand mind. 15 € und 30 % Gewinn bleiben. Max. 2 Posts pro Kanal und Lauf. Alle Grenzen stehen unter `quality:` und `flips:` in `config.yaml`.
 
-Eingebaut: Preisgrenze pro Suche, Ausschlusswörter (defekt, Fake, …), keine Doppelposts, max. 5 Posts pro Kanal und Lauf. Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
+Jede Karte zeigt ein großes Produktbild, Preis, eBay-Marktpreis und Ersparnis bzw. Gewinn, in Gold passend zum Server.
+
+Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
+
+## Alte Posts löschen
+
+Actions → „Clean up old posts“ → „Run workflow“ löscht alle Bot-Posts aus der Zeit vor dem Qualitätsfilter. Nachrichten von Mitgliedern und angepinnte Nachrichten bleiben. Dafür braucht es das Secret `DISCORD_BOT_TOKEN` (der Token des Bots, mit dem der Server eingerichtet wurde).
 
 ## 1. eBay-Developer-Zugang (einmalig, kostenlos)
 
@@ -36,6 +42,7 @@ Im Repository unter Settings → Secrets and variables → Actions → „New re
 
 - `EBAY_CLIENT_ID`, `EBAY_CLIENT_SECRET`
 - `EBAY_CAMPAIGN_ID` (optional)
+- `DISCORD_BOT_TOKEN` (nur zum Löschen alter Posts)
 - `WEBHOOKS`: eine Zeile pro Kanal im Format `kanalname=webhook-url` (z. B. `lego=https://discord.com/api/webhooks/...`)
 
 ## 4. Testen und starten

@@ -8,7 +8,7 @@
 
 marketplace: EBAY_DE
 item_location_country: DE
-max_posts_per_run: 5          # pro Kanal, gegen Spam
+max_posts_per_run: 2          # pro Kanal und Lauf, nur die besten
 free_deals_per_day: 0      # free-deals-Kanal gibt es nicht mehr; >0 schaltet ihn wieder ein
 free_deals_delay_hours: 24
 
@@ -23,6 +23,20 @@ exclude_words:                # Titel mit diesen Wörtern werden ignoriert
   - nur ovp
   - leerhülle
   - suche
+
+# Qualitätsfilter für eBay-Angebote: jedes Angebot wird mit aktuellen eBay-Preisen für genau
+# dieses Produkt verglichen. Gepostet wird nur, was deutlich günstiger ist.
+quality:
+  min_discount: 0.30          # mind. 30 % unter dem eBay-Marktpreis (Median)
+  max_discount: 0.75          # mehr als 75 % drunter ist meist ein anderes Produkt oder Zubehör
+  min_saving: 15              # mind. 15 € Ersparnis
+  min_comparables: 8          # mind. 8 Vergleichsangebote, sonst kein verlässlicher Marktpreis
+  min_seller_feedback: 97     # Verkäufer mit mind. 97 % positiv
+  min_seller_score: 20        # und mind. 20 Bewertungen
+  max_lookups_per_run: 20     # Preisvergleiche pro Lauf (eBay-API-Limit 5000 Aufrufe am Tag)
+  exclude_words: [leer, nur karton, nur box, nur anleitung, ohne spiel, ohne controller, gesperrt, icloud,
+                  reproduktion, repro, nachbau, inspired, ähnlich, style, look, kopie, bootleg, mystery,
+                  zubehör, hülle, case, cover, sticker, poster]
 
 # deal-alerts bekommt nach jedem Lauf eine Übersicht aller neuen Deals mit Link zum Kanal und Post.
 
@@ -51,11 +65,11 @@ flips:
     - https://www.mein-deal.com/feed/
   min_buy_price: 5
   max_buy_price: 150
-  min_profit: 10            # EUR Gewinn nach Gebühren und Versand
-  min_roi: 0.25             # mindestens 25 % auf den Einkaufspreis
+  min_profit: 15            # EUR Gewinn nach Gebühren und Versand
+  min_roi: 0.30             # mindestens 30 % auf den Einkaufspreis
   ebay_fee: 0.13            # gewerbliche Verkäufer ca. 11-13 %, privat 0
   shipping_cost: 5          # was du für den Versand ausgibst
-  min_comparables: 5        # so viele vergleichbare eBay-Angebote nötig
+  min_comparables: 8        # so viele vergleichbare eBay-Angebote nötig
   max_resale_factor: 4      # eBay-Preis > 4x Kaufpreis = vermutlich falsches Produkt
   max_posts_per_run: 3
   exclude_words:
@@ -124,7 +138,7 @@ routing:
 # Reduzierte Shop-Deals nach den Regeln oben posten (ohne Gewinn-Check), zusätzlich zu den Flips.
 # Ein Deal, der schon als Flip kam, wird hier nicht noch einmal gepostet.
 hot_deals:
-  enabled: true
+  enabled: false            # Shop-Deals ohne Gewinn-Check: aus, nur geprüfte Flips werden gepostet
   max_posts_per_run: 30     # insgesamt pro Lauf
   max_per_channel: 3        # pro Kanal und Lauf
   max_age_hours: 48         # ältere Deals werden nicht mehr gepostet
