@@ -150,8 +150,9 @@ class Ebay:
             timeout=30,
         )
         r.raise_for_status()
-        return [float(i["price"]["value"]) for i in r.json().get("itemSummaries", [])
-                if "price" in i and i.get("itemId") != skip_id]
+        items = [i for i in r.json().get("itemSummaries", []) if "price" in i and i.get("itemId") != skip_id]
+        self.last_image = next((image_url(i) for i in items if image_url(i)), None)  # photo for shop deals without one
+        return [float(i["price"]["value"]) for i in items]
 
     def get_item(self, item_id):
         r = requests.get(ITEM_URL.format(item_id), headers=self._headers(), timeout=30)
@@ -159,6 +160,14 @@ class Ebay:
             return None
         r.raise_for_status()
         return r.json()
+
+
+def image_url(item):
+    """Biggest available eBay photo of a listing (search results don't always carry the main image)."""
+    for img in [item.get("image")] + (item.get("thumbnailImages") or []) + (item.get("additionalImages") or []):
+        if img and img.get("imageUrl"):
+            return re.sub(r"\.webp$", ".jpg", re.sub(r"s-l\d+\.", "s-l1600.", img["imageUrl"]))
+    return None
 
 
 def shipping_cost(item):
@@ -226,9 +235,9 @@ def make_embed(item, search, channel, market, n, site=DE_MARKET):
         "footer": {"text": " · ".join(details + [f"Ships from {site['country']}", "Price may change"])},
         "timestamp": now().isoformat(),
     }
-    img = (item.get("image") or {}).get("imageUrl")
+    img = image_url(item)
     if img:
-        embed["image"] = {"url": re.sub(r"s-l\d+\.", "s-l1600.", img)}  # full-size product photo
+        embed["image"] = {"url": img}
     return embed
 
 
@@ -290,7 +299,8 @@ def post(channel, embed):
         guild = guild_id_for(hook)
         link = f"https://discord.com/channels/{guild}/{msg['channel_id']}/{msg['id']}" if guild else embed["url"]
         price = next((f["value"] for f in embed.get("fields", []) if f["name"] in ("Price", "Buy price")), "")
-        _digest.append({"channel_id": msg["channel_id"], "title": embed["title"], "price": price, "link": link})
+        _digest.append({"channel_id": msg["channel_id"], "title": embed["title"], "price": price, "link": link,
+                        "image": (embed.get("image") or {}).get("url")})
     return True
 
 
@@ -313,6 +323,9 @@ def send_digest():
         embed = {"description": text, "color": DEFAULT_COLOR, "timestamp": now().isoformat()}
         if title:
             embed["title"] = title
+            img = next((d["image"] for d in _digest if d.get("image")), None)
+            if img:
+                embed["thumbnail"] = {"url": img}
         msg = send(hook, {"username": "Deal Alerts", "embeds": [embed]})
         if msg:
             _messages.append([DIGEST_CHANNEL, msg["id"], now().isoformat()])
@@ -409,6 +422,14 @@ def run_searches(ebay, cfg, state):
         if off < qc.get("min_discount", 0.3) or off > qc.get("max_discount", 0.75) \
                 or market - total < qc.get("min_saving", 15) * fx:
             continue  # too small a saving, or so big that it's probably a different item
+        if not image_url(item):
+            try:
+                full = ebay.get_item(item["itemId"]) or {}
+            except requests.RequestException:
+                full = {}
+            item = {**item, "image": full.get("image"), "additionalImages": full.get("additionalImages")}
+            if not image_url(item):
+                continue  # every post gets a product photo
         if post(channel, make_embed(item, search, channel, market, len(prices), site)):
             posted_per_channel[channel] = posted_per_channel.get(channel, 0) + 1
             state["candidates"].append({
@@ -596,6 +617,9 @@ def run_flips(ebay, cfg, state):
             if profit < fc.get("min_profit", 10) or profit / d["price"] < fc.get("min_roi", 0.25):
                 continue
             channel = route(d["title"], cfg) or fc.get("channel", "tech-flips")
+            d = {**d, "image": d.get("image") or ebay.last_image}
+            if not d["image"]:
+                continue  # every post gets a product photo
             if post(channel, make_flip_embed(d, query, resale, profit, len(prices), fc)):
                 posted += 1
                 state.setdefault("hot_posted", {})[d["id"]] = now().isoformat()  # never repost as plain deal
