@@ -8,6 +8,7 @@ Env:
                       posts by webhooks that no longer exist)
   WEBHOOKS            same secret as deal_alerts.py, tells which channels to clean
   CUTOFF              optional ISO time; default: quality_since from state.json
+  SINCE               optional ISO time; only delete posts newer than this (e.g. one botched run)
   DRY_RUN=1           only count what would be deleted
 """
 
@@ -46,7 +47,9 @@ def main():
             cutoff = json.load(f).get("quality_since", "")
     if not cutoff:
         sys.exit("No cutoff: run deal_alerts.py once first or set CUTOFF")
-    print(f"Deleting bot posts older than {cutoff}{' (dry run)' if dry else ''}")
+    since = os.environ.get("SINCE", "").strip()
+    print(f"Deleting bot posts older than {cutoff}{f' and newer than {since}' if since else ''}"
+          f"{' (dry run)' if dry else ''}")
 
     total = 0
     for name, hook in webhooks_from_env().items():
@@ -65,11 +68,11 @@ def main():
                 print(f"#{name}: can't read messages ({r.status_code}: {r.text[:120]})")
                 break
             msgs = r.json()
-            if not msgs:
+            if not msgs or (since and msgs[0]["timestamp"] <= since):
                 break
             before = msgs[-1]["id"]
             for m in msgs:
-                if m["timestamp"] >= cutoff or not (m.get("webhook_id") or m["author"].get("bot")) or m.get("pinned"):
+                if m["timestamp"] >= cutoff or m["timestamp"] <= since or not (m.get("webhook_id") or m["author"].get("bot")) or m.get("pinned"):
                     continue  # keep newer posts, member messages and pinned posts (channel guides)
                 if dry:
                     deleted += 1

@@ -30,6 +30,9 @@ def main():
     if not token:
         sys.exit("DISCORD_BOT_TOKEN is missing")
     bot = {"Authorization": f"Bot {token}", "User-Agent": "DealAlertsHeaders (github actions, 1.0)"}
+    me = call("GET", f"{API}/users/@me", headers=bot)
+    if not me.ok:  # without the bot we can't find the old guides and would post duplicates
+        sys.exit(f"Bot token rejected ({me.status_code}); update the DISCORD_BOT_TOKEN secret")
     with open(CONFIG_PATH, encoding="utf-8") as f:
         info = yaml.safe_load(f).get("channel_info", {})
     for name, hook in webhooks_from_env().items():

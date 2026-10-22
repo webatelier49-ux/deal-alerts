@@ -14,6 +14,10 @@ on:
         description: "Optional ISO time, e.g. 2026-10-22T17:00:00+00:00 (default: start of the quality filter)"
         type: string
         default: ""
+      since:
+        description: "Optional ISO time: only delete posts newer than this"
+        type: string
+        default: ""
       guides:
         description: "Post or update the pinned channel guides afterwards"
         type: boolean
@@ -35,6 +39,7 @@ jobs:
         env:
           DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
           CUTOFF: ${{ inputs.cutoff }}
+          SINCE: ${{ inputs.since }}
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
         run: python cleanup.py
