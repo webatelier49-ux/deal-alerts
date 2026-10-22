@@ -207,6 +207,12 @@ def discount(price, ref):
 DE_MARKET = {"id": "EBAY_DE", "currency": "EUR", "country": "DE", "symbol": "€", "site": "eBay.de", "flag": "🇩🇪", "fx": 1}
 
 
+def sold_link(query, site=DE_MARKET):
+    """eBay search of sold listings: the real sales of the last weeks (eBay's API has no sales numbers)."""
+    return (f"https://www.{site['site'].lower()}/sch/i.html?_nkw={requests.utils.quote(query)}"
+            "&LH_Sold=1&LH_Complete=1")
+
+
 def make_embed(item, search, channel, market, n, site=DE_MARKET):
     c = site["symbol"]
     price = float(item["price"]["value"])
@@ -219,6 +225,8 @@ def make_embed(item, search, channel, market, n, site=DE_MARKET):
          "inline": True},
         {"name": "eBay market", "value": f"~{c}{market:.0f} ({n} listings)", "inline": True},
         {"name": "You save", "value": f"~{c}{market - total:.0f} ({off:.0%})", "inline": True},
+        {"name": "📊 Demand", "value": f"[See what sold recently]({sold_link(item_query(item['title']), site)})",
+         "inline": False},
     ]
     details = []
     if item.get("condition"):
