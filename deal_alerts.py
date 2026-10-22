@@ -98,7 +98,7 @@ class Ebay:
         self.token = self._get_token()
 
     def _get_token(self):
-        creds = f"{os.environ['EBAY_CLIENT_ID']}:{os.environ['EBAY_CLIENT_SECRET']}"
+        creds = f"{os.environ['EBAY_CLIENT_ID'].strip()}:{os.environ['EBAY_CLIENT_SECRET'].strip()}"
         r = requests.post(
             TOKEN_URL,
             headers={
@@ -601,14 +601,19 @@ def main():
     with open(CONFIG_PATH, encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
     state = load_state()
-    if not os.environ.get("EBAY_CLIENT_ID") or not os.environ.get("EBAY_CLIENT_SECRET"):
-        # Until the eBay keys exist, only matching mydealz price drops are posted.
+    ebay = None
+    if os.environ.get("EBAY_CLIENT_ID") and os.environ.get("EBAY_CLIENT_SECRET"):
+        try:
+            ebay = Ebay(cfg.get("marketplace", "EBAY_DE"), os.environ.get("EBAY_CAMPAIGN_ID") or None)
+        except requests.RequestException as e:
+            print(f"eBay login failed ({e}); falling back to shop deals only.", file=sys.stderr)
+    if ebay is None:
+        # Without working eBay keys, only matching shop price drops are posted.
         hot = run_hot_deals(cfg, state)
         save_state(state)
         send_digest()
-        print(f"No eBay keys: eBay searches skipped; mydealz deals posted: {hot}")
+        print(f"No eBay access: eBay searches skipped; shop deals posted: {hot}")
         return
-    ebay = Ebay(cfg.get("marketplace", "EBAY_DE"), os.environ.get("EBAY_CAMPAIGN_ID") or None)
     posted = run_searches(ebay, cfg, state)
     flips = run_flips(ebay, cfg, state)
     free = run_free_deals(ebay, cfg, state)
