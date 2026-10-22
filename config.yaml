@@ -46,11 +46,9 @@ flips:
     - https://www.mydealz.de/rss/gruppe/playstation
     - https://www.mydealz.de/rss/gruppe/xbox
     - https://www.mydealz.de/rss/gruppe/kleidung
-    - https://www.mydealz.de/rss/gruppe/sammelkarten
     # weitere Schnäppchen-Seiten (öffentliche RSS-Feeds)
     - https://www.dealdoktor.de/feed/
     - https://www.mein-deal.com/feed/
-    - https://www.schnaeppchenfuchs.com/feed
   min_buy_price: 5
   max_buy_price: 150
   min_profit: 10            # EUR Gewinn nach Gebühren und Versand
@@ -123,8 +121,8 @@ routing:
   - channel: tech-flips
     keywords: [kopfhörer, airpods, bose, sony wh, sony wf, ipad, iphone, apple watch, macbook, galaxy, gopro, dyson, kindle, lautsprecher, jbl, samsung, apple, ssd, monitor, fernseher, oled, smartwatch, tablet, laptop, notebook, xiaomi, anker, logitech, powerbank, drohne, dji, beamer, grafikkarte, nvme]
 
-# Solange keine eBay-Keys da sind: reduzierte mydealz-Deals nach den Regeln oben posten
-# (ohne Gewinn-Check). Mit Keys übernehmen die Flips oben, inklusive Gewinnrechnung.
+# Reduzierte Shop-Deals nach den Regeln oben posten (ohne Gewinn-Check), zusätzlich zu den Flips.
+# Ein Deal, der schon als Flip kam, wird hier nicht noch einmal gepostet.
 hot_deals:
   enabled: true
   max_posts_per_run: 30     # insgesamt pro Lauf

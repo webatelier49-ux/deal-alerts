@@ -13,7 +13,7 @@ Kanäle (Name ohne Emoji, so wie im Secret `WEBHOOKS`):
 
 eBay-Suchen stehen unter `searches:`, die Zuordnung von mydealz-Deals und Flips nach Stichwort unter `routing:` in `config.yaml`.
 
-Ohne eBay-Keys postet der Bot reduzierte Deals von mydealz, DealDoktor, mein-deal und Schnäppchenfuchs zu deinen Nischen (ohne Gewinn-Check, verteilt nach `routing:`, max. 3 pro Kanal und Lauf, nur Deals der letzten 48 Stunden, jeder Deal nur einmal). Mit Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu.
+Der Bot postet reduzierte Shop-Deals von mydealz, DealDoktor und mein-deal zu deinen Nischen (ohne Gewinn-Check, verteilt nach `routing:`, max. 3 pro Kanal und Lauf, nur Deals der letzten 48 Stunden, jeder Deal nur einmal). Mit eBay-Keys kommen eBay-Suchen und Flips mit Gewinnrechnung dazu. Fällt eBay aus, laufen die Shop-Deals weiter.
 
 Eingebaut: Preisgrenze pro Suche, Ausschlusswörter (defekt, Fake, …), keine Doppelposts, max. 5 Posts pro Kanal und Lauf. Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote kommt.
 

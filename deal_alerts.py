@@ -524,6 +524,7 @@ def run_flips(ebay, cfg, state):
             channel = route(d["title"], cfg) or fc.get("channel", "tech-flips")
             if post(channel, make_flip_embed(d, query, resale, profit, len(prices), fc)):
                 posted += 1
+                state.setdefault("hot_posted", {})[d["id"]] = now().isoformat()  # never repost as plain deal
                 top = cfg.get("top_deals") or {}
                 post_top_copy(cfg, make_flip_embed(d, query, resale, profit, len(prices), fc),
                               profit >= top.get("min_flip_profit", float("inf")))
@@ -616,10 +617,11 @@ def main():
         return
     posted = run_searches(ebay, cfg, state)
     flips = run_flips(ebay, cfg, state)
+    hot = run_hot_deals(cfg, state)  # shop deals without a profit check keep the niche channels busy
     free = run_free_deals(ebay, cfg, state)
     save_state(state)
     send_digest()
-    print(f"Posted: {posted or 'nothing new'}; flips: {flips}; free-deals: {free}")
+    print(f"Posted: {posted or 'nothing new'}; flips: {flips}; shop deals: {hot}; free-deals: {free}")
 
 
 if __name__ == "__main__":
