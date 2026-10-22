@@ -92,6 +92,7 @@ def save_state(state):
 class Ebay:
     def __init__(self, marketplace, campaign_id=None):
         self.marketplace = marketplace
+        self.currency, self.country = "EUR", "DE"  # switched by use_market() for other eBay sites
         self.campaign_id = campaign_id
         self.token = self._get_token()
 
@@ -117,14 +118,16 @@ class Ebay:
             h["X-EBAY-C-ENDUSERCTX"] = f"affiliateCampaignId={self.campaign_id}"
         return h
 
-    def search(self, query, max_price, country):
+    def use_market(self, market):
+        self.marketplace, self.currency, self.country = market["id"], market["currency"], market["country"]
+
+    def search(self, query, max_price, country=None):
         filters = [
             f"price:[..{max_price}]",
-            "priceCurrency:EUR",
+            f"priceCurrency:{self.currency}",
             "buyingOptions:{FIXED_PRICE}",
+            f"itemLocationCountry:{self.country}",
         ]
-        if country:
-            filters.append(f"itemLocationCountry:{country}")
         r = requests.get(
             SEARCH_URL,
             headers=self._headers(),
@@ -136,8 +139,8 @@ class Ebay:
         return r.json().get("itemSummaries", [])
 
     def market_prices(self, query, new_only=True, skip_id=None):
-        """Asking prices of fixed-price listings in Germany: a rough proxy for what an item resells for."""
-        filters = "buyingOptions:{FIXED_PRICE},priceCurrency:EUR,itemLocationCountry:DE"
+        """Asking prices of fixed-price listings on this eBay site: a rough proxy for what an item resells for."""
+        filters = f"buyingOptions:{{FIXED_PRICE}},priceCurrency:{self.currency},itemLocationCountry:{self.country}"
         if new_only:
             filters += ",conditions:{NEW}"
         r = requests.get(
@@ -192,17 +195,21 @@ def discount(price, ref):
     return max(0.0, 1 - price / ref)
 
 
-def make_embed(item, search, channel, market, n):
+DE_MARKET = {"id": "EBAY_DE", "currency": "EUR", "country": "DE", "symbol": "€", "site": "eBay.de", "flag": "🇩🇪", "fx": 1}
+
+
+def make_embed(item, search, channel, market, n, site=DE_MARKET):
+    c = site["symbol"]
     price = float(item["price"]["value"])
     ship = shipping_cost(item) or 0
     total = price + ship
     url = item.get("itemAffiliateWebUrl") or item["itemWebUrl"]
     off = discount(total, market)
     fields = [
-        {"name": "Price", "value": f"**€{price:.2f}**" + (f" + €{ship:.2f} shipping" if ship else " · free shipping"),
+        {"name": "Price", "value": f"**{c}{price:.2f}**" + (f" + {c}{ship:.2f} shipping" if ship else " · free shipping"),
          "inline": True},
-        {"name": "eBay market", "value": f"~€{market:.0f} ({n} listings)", "inline": True},
-        {"name": "You save", "value": f"~€{market - total:.0f} ({off:.0%})", "inline": True},
+        {"name": "eBay market", "value": f"~{c}{market:.0f} ({n} listings)", "inline": True},
+        {"name": "You save", "value": f"~{c}{market - total:.0f} ({off:.0%})", "inline": True},
     ]
     details = []
     if item.get("condition"):
@@ -211,12 +218,12 @@ def make_embed(item, search, channel, market, n):
     if seller.get("feedbackPercentage"):
         details.append(f"Seller {seller['feedbackPercentage']}% ({seller.get('feedbackScore', '?')})")
     embed = {
-        "author": {"name": f"🔥 {off:.0%} below market · {search['name']}"},
+        "author": {"name": f"🔥 {off:.0%} below market · {site['flag']} {site['site']} · {search['name']}"},
         "title": item["title"][:256],
         "url": url,
         "color": COLORS.get(channel, DEFAULT_COLOR),
         "fields": fields,
-        "footer": {"text": " · ".join(details + ["eBay.de", "Price may change"])},
+        "footer": {"text": " · ".join(details + [f"Ships from {site['country']}", "Price may change"])},
         "timestamp": now().isoformat(),
     }
     img = (item.get("image") or {}).get("imageUrl")
@@ -321,7 +328,9 @@ def item_query(title):
 
 QUERY_STOPWORDS = {"neu", "new", "ovp", "top", "gebraucht", "zustand", "sehr", "gut", "guter", "selten", "rar",
                    "original", "originalverpackt", "versand", "kostenlos", "inkl", "mit", "und", "der", "die",
-                   "das", "für", "fur", "wie", "sammlung", "konvolut", "getestet", "tested", "pal", "blitzversand"}
+                   "das", "für", "fur", "wie", "sammlung", "konvolut", "getestet", "tested", "pal", "blitzversand",
+                   "used", "brand", "sealed", "authentic", "genuine", "rare", "free", "shipping", "fast", "the",
+                   "and", "with", "for", "lot", "cib", "complete"}
 
 
 def good_seller(item, qc):
@@ -341,13 +350,24 @@ def run_searches(ebay, cfg, state):
     The best ones are then checked against current eBay prices for that exact product; only a big,
     plausible gap (not a different item or an accessory) gets posted.
     """
-    first_run = not state.get("initialized")
+    markets = cfg.get("markets") or [DE_MARKET]
+    turn = state.get("market_turn", 0) % len(markets)
+    state["market_turn"] = turn + 1
+    site = {**DE_MARKET, **markets[turn]}  # one eBay site per run keeps us inside eBay's daily API limit
+    ebay.use_market(site)
+    done_markets = state.setdefault("initialized_markets", ["EBAY_DE"] if state.get("initialized") else [])
+    first_run = site["id"] not in done_markets
+    print(f"eBay site this run: {site['site']}{' (first run, only reading)' if first_run else ''}")
     qc = cfg.get("quality") or {}
     exclude = cfg.get("exclude_words", []) + qc.get("exclude_words", [])
+    fx = site.get("fx", 1)
     candidates = []
     for search in cfg["searches"]:
+        if site["id"] not in search.get("markets", [m["id"] for m in markets]):
+            continue
+        query = search["query"] if site["id"] == "EBAY_DE" else search.get("query_en") or translate(search["query"])
         try:
-            items = ebay.search(search["query"], search["max_price"], cfg.get("item_location_country"))
+            items = ebay.search(query, round(search["max_price"] * fx))
         except requests.RequestException as e:
             print(f"Search '{search['name']}' failed: {e}", file=sys.stderr)
             continue
@@ -359,10 +379,12 @@ def run_searches(ebay, cfg, state):
             if first_run or is_excluded(item["title"], exclude) or not good_seller(item, qc):
                 continue
             total = float(item["price"]["value"]) + (shipping_cost(item) or 0)
-            if search.get("ref_price") and total > search["ref_price"] * (1 - qc.get("min_discount", 0.3)):
+            if search.get("ref_price") and total > search["ref_price"] * fx * (1 - qc.get("min_discount", 0.3)):
                 continue  # not even cheap compared to the rough reference price
-            candidates.append((discount(total, search.get("ref_price")), total, item, search))
+            candidates.append((discount(total, (search.get("ref_price") or 0) * fx), total, item, search))
     state["initialized"] = True
+    if site["id"] not in done_markets:
+        done_markets.append(site["id"])
 
     posted_per_channel, lookups = {}, 0
     for _, total, item, search in sorted(candidates, key=lambda c: -c[0]):
@@ -385,9 +407,9 @@ def run_searches(ebay, cfg, state):
         market = statistics.median(prices)
         off = discount(total, market)
         if off < qc.get("min_discount", 0.3) or off > qc.get("max_discount", 0.75) \
-                or market - total < qc.get("min_saving", 15):
+                or market - total < qc.get("min_saving", 15) * fx:
             continue  # too small a saving, or so big that it's probably a different item
-        if post(channel, make_embed(item, search, channel, market, len(prices))):
+        if post(channel, make_embed(item, search, channel, market, len(prices), site)):
             posted_per_channel[channel] = posted_per_channel.get(channel, 0) + 1
             state["candidates"].append({
                 "item_id": item["itemId"],
@@ -395,7 +417,21 @@ def run_searches(ebay, cfg, state):
                 "score": off,
                 "posted_at": now().isoformat(),
             })
+    ebay.use_market(DE_MARKET)  # flips compare German shop prices with eBay.de
     return posted_per_channel
+
+
+TRANSLATE = [("karten sammlung", "cards collection"), ("set neu ovp", "set new sealed"), ("trainingsjacke", "track jacket"),
+             ("minifiguren", "minifigures"), ("konvolut", "lot"), ("sammlung", "collection"), ("spiele", "games"),
+             ("spiel", "game"), ("modul", "cartridge"), ("konsole", "console"), ("jacke", "jacket"),
+             ("pullover", "sweater"), ("hemd", "shirt"), ("karten", "cards")]
+
+
+def translate(query):
+    """German search words to English for eBay.com and eBay.co.uk."""
+    for de, en in TRANSLATE:
+        query = re.sub(rf"\b{de}\b", en, query)
+    return query
 
 
 PRICE_RE = re.compile(r"(\d{1,4}(?:[.,]\d{2})?)\s*(?:€|EUR)")

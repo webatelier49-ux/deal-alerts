@@ -1,6 +1,6 @@
 """Delete old bot posts from every deal channel, so only posts made with the current quality filter remain.
 
-Only unpinned webhook posts are touched; member messages, bot messages and pinned posts stay. "Old" means posted before
+Only unpinned webhook and bot posts are touched; member messages and pinned posts stay. "Old" means posted before
 quality_since in state.json (set the first time the stricter filter ran), or before CUTOFF if given.
 
 Env:
@@ -69,8 +69,8 @@ def main():
                 break
             before = msgs[-1]["id"]
             for m in msgs:
-                if m["timestamp"] >= cutoff or not m.get("webhook_id") or m.get("pinned"):
-                    continue  # keep new posts, member and bot messages (e.g. channel intros), pinned posts
+                if m["timestamp"] >= cutoff or not (m.get("webhook_id") or m["author"].get("bot")) or m.get("pinned"):
+                    continue  # keep newer posts, member messages and pinned posts (channel guides)
                 if dry:
                     deleted += 1
                     continue

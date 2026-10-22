@@ -13,6 +13,8 @@ Kanäle (Name ohne Emoji, so wie im Secret `WEBHOOKS`):
 
 eBay-Suchen stehen unter `searches:`, die Zuordnung von mydealz-Deals und Flips nach Stichwort unter `routing:` in `config.yaml`.
 
+**eBay-Seiten:** abwechselnd 🇩🇪 eBay.de, 🇺🇸 eBay.com und 🇬🇧 eBay.co.uk (`markets:` in `config.yaml`), pro Lauf eine Seite wegen eBays Tageslimit.
+
 **Nur gute Deals:** Jedes neue eBay-Angebot wird mit den aktuellen eBay-Preisen für genau dieses Produkt verglichen. Gepostet wird nur, was mindestens 30 % und 15 € unter dem Marktpreis liegt, von Verkäufern mit mind. 97 % positiven Bewertungen. Mehr als 75 % drunter wird verworfen (meist Zubehör oder ein anderes Produkt). Shop-Deals (mydealz, DealDoktor, mein-deal) kommen nur als Flip, wenn nach eBay-Gebühren und Versand mind. 15 € und 30 % Gewinn bleiben. Max. 2 Posts pro Kanal und Lauf. Alle Grenzen stehen unter `quality:` und `flips:` in `config.yaml`.
 
 Jede Karte zeigt ein großes Produktbild, Preis, eBay-Marktpreis und Ersparnis bzw. Gewinn, in Gold passend zum Server.
@@ -21,7 +23,7 @@ Beim allerersten Lauf wird nichts gepostet, damit keine Flut alter Angebote komm
 
 ## Alte Posts löschen
 
-Actions → „Clean up old posts“ → „Run workflow“ löscht alle Bot-Posts aus der Zeit vor dem Qualitätsfilter. Nachrichten von Mitgliedern und angepinnte Nachrichten bleiben. Dafür braucht es das Secret `DISCORD_BOT_TOKEN` (der Token des Bots, mit dem der Server eingerichtet wurde).
+Actions → „Clean up old posts“ → „Run workflow“ löscht alle Bot-Posts aus der Zeit vor dem Qualitätsfilter (oder vor der Zeit unter „cutoff“). Nachrichten von Mitgliedern und angepinnte Nachrichten bleiben. Danach setzt es in jedem Kanal das Kanalthema und eine angepinnte Erklärung ganz oben (Texte unter `channel_info:` in `config.yaml`). Dafür braucht es das Secret `DISCORD_BOT_TOKEN` (der Token des Bots, mit dem der Server eingerichtet wurde).
 
 ## 1. eBay-Developer-Zugang (einmalig, kostenlos)
 

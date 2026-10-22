@@ -8,6 +8,12 @@
 
 marketplace: EBAY_DE
 item_location_country: DE
+# eBay-Seiten, die abwechselnd durchsucht werden (pro Lauf eine, wegen eBays Limit von 5000 Abfragen am Tag).
+# fx rechnet max_price, ref_price und min_saving aus Euro grob in die Landeswährung um.
+markets:
+  - {id: EBAY_DE, currency: EUR, country: DE, symbol: "€", site: eBay.de, flag: "🇩🇪", fx: 1}
+  - {id: EBAY_US, currency: USD, country: US, symbol: "$", site: eBay.com, flag: "🇺🇸", fx: 1.15}
+  - {id: EBAY_GB, currency: GBP, country: GB, symbol: "£", site: eBay.co.uk, flag: "🇬🇧", fx: 0.87}
 max_posts_per_run: 2          # pro Kanal und Lauf, nur die besten
 free_deals_per_day: 0      # free-deals-Kanal gibt es nicht mehr; >0 schaltet ihn wieder ein
 free_deals_delay_hours: 24
@@ -34,7 +40,8 @@ quality:
   min_seller_feedback: 97     # Verkäufer mit mind. 97 % positiv
   min_seller_score: 20        # und mind. 20 Bewertungen
   max_lookups_per_run: 20     # Preisvergleiche pro Lauf (eBay-API-Limit 5000 Aufrufe am Tag)
-  exclude_words: [leer, nur karton, nur box, nur anleitung, ohne spiel, ohne controller, gesperrt, icloud,
+  exclude_words: [broken, for parts, not working, read description, empty box, box only, reproduction, custom, read,
+                  leer, nur karton, nur box, nur anleitung, ohne spiel, ohne controller, gesperrt, icloud,
                   reproduktion, repro, nachbau, inspired, ähnlich, style, look, kopie, bootleg, mystery,
                   zubehör, hülle, case, cover, sticker, poster]
 
@@ -206,6 +213,7 @@ searches:
 
   - name: Sega Mega Drive
     query: sega mega drive
+    query_en: sega genesis
     channel: other-consoles
     max_price: 40
     ref_price: 80
@@ -308,6 +316,7 @@ searches:
 
   - name: Levi's trucker
     query: levis trucker jacke
+    query_en: levis trucker jacket
     channel: levis
     max_price: 20
     ref_price: 50
@@ -407,3 +416,30 @@ searches:
     channel: trading-cards
     max_price: 25
     ref_price: 60
+
+# Kanal-Kopf: oben angepinnte Erklärung und Kanalthema, gesetzt mit headers.py (Workflow „Channel headers“).
+channel_info:
+  deal-alerts: ["🚨", "Deal Alerts", "Every new deal from all channels in one place, with a link straight to the post. Turn on notifications here if you only want one ping."]
+  nintendo: ["🍄", "Nintendo", "N64, SNES and GameCube games listed well below their eBay market price."]
+  game-boy: ["🕹️", "Game Boy", "Game Boy, Game Boy Color and Advance SP games and consoles below market price."]
+  playstation: ["🎮", "PlayStation", "PS1 and PS2 games below their eBay market price."]
+  consoles: ["🖥️", "Consoles", "Nintendo Switch and PS4 consoles listed well below what they sell for."]
+  other-consoles: ["👾", "Other Consoles", "Sega and original Xbox games and consoles below market price."]
+  retro-games: ["📼", "Retro Games", "NES, PSP and other retro titles below market price."]
+  retro-bundles: ["📦", "Retro Bundles", "Game and console bundles that are worth more split up."]
+  nike-dunks: ["👟", "Nike Dunks", "Nike Dunk Lows below their eBay market price."]
+  jordans: ["🏀", "Jordans", "Air Jordan 1s below market price."]
+  air-max: ["💨", "Air Max", "Air Max 90 and Air Max 1 below market price."]
+  new-balance: ["🟦", "New Balance", "New Balance 550 and 2002R below market price."]
+  adidas: ["⚫", "Adidas", "Adidas Samba and Campus below market price."]
+  carhartt: ["🧥", "Carhartt", "Carhartt jackets, including the Detroit Jacket, below market price."]
+  levis: ["👖", "Levi's", "Levi's 501 and trucker jackets below market price."]
+  ralph-lauren: ["🐎", "Ralph Lauren", "Ralph Lauren knits and shirts below market price."]
+  the-north-face: ["🏔️", "The North Face", "Nuptse puffers and fleeces below market price."]
+  vintage-nike: ["✔️", "Vintage Nike", "Vintage Nike sweats and track jackets below market price."]
+  designer: ["💎", "Designer", "Stone Island, CP Company and Moncler below market price."]
+  clothing-deals: ["👕", "Clothing Deals", "Other brands, Air Force 1s and vintage pieces below market price."]
+  lego: ["🧱", "LEGO", "Sealed LEGO sets, minifigures and bundles below market price, plus shop deals with resale profit."]
+  pokemon-cards: ["⚡", "Pokémon Cards", "Pokémon collections and sealed product below market price."]
+  trading-cards: ["🃏", "Trading Cards", "Yu-Gi-Oh! and Magic: The Gathering collections below market price."]
+  tech-flips: ["💸", "Tech Flips", "Shop deals (Amazon, MediaMarkt, Saturn and more) that resell on eBay for a real profit after fees."]

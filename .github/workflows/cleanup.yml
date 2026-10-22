@@ -1,5 +1,7 @@
 name: Clean up old posts
 
+# Optionally also posts or updates the pinned guide at the top of every deal channel (headers.py).
+
 # Deletes bot posts made before the stricter quality filter (quality_since in state.json).
 on:
   workflow_dispatch:
@@ -12,6 +14,10 @@ on:
         description: "Optional ISO time, e.g. 2026-10-22T17:00:00+00:00 (default: start of the quality filter)"
         type: string
         default: ""
+      guides:
+        description: "Post or update the pinned channel guides afterwards"
+        type: boolean
+        default: true
 
 jobs:
   cleanup:
@@ -32,3 +38,9 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
         run: python cleanup.py
+      - name: Channel guides
+        if: ${{ inputs.guides && !inputs.dry_run }}
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          WEBHOOKS: ${{ secrets.WEBHOOKS }}
+        run: python headers.py
