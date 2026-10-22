@@ -419,7 +419,7 @@ searches:
 
 # Kanal-Kopf: oben angepinnte Erklärung und Kanalthema, gesetzt mit headers.py (Workflow „Channel headers“).
 channel_info:
-  deal-alerts: ["🚨", "Deal Alerts", "Every new deal from all channels in one place, with a link straight to the post. Turn on notifications here if you only want one ping."]
+  deal-alerts: ["🔥", "Top Deals", "Every new deal from all monitors in one place, with a link straight to the post. Turn on notifications here if you only want one ping."]
   nintendo: ["🍄", "Nintendo", "N64, SNES and GameCube games listed well below their eBay market price."]
   game-boy: ["🕹️", "Game Boy", "Game Boy, Game Boy Color and Advance SP games and consoles below market price."]
   playstation: ["🎮", "PlayStation", "PS1 and PS2 games below their eBay market price."]
