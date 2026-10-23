@@ -49,3 +49,9 @@ jobs:
           DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
           WEBHOOKS: ${{ secrets.WEBHOOKS }}
         run: python headers.py
+      - name: Vinted channel setup check
+        if: ${{ inputs.guides && !inputs.dry_run }}
+        env:
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          WEBHOOKS: ${{ secrets.WEBHOOKS }}
+        run: python vinted.py

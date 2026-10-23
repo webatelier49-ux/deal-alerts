@@ -179,3 +179,15 @@ def run_vinted_finds(ebay, cfg, state):
                                      "allowed_mentions": {"users": [m["author"]["id"]]}, "embeds": [embed]})
             answered += 1
     return answered
+
+
+if __name__ == "__main__":
+    # Manual setup check: creates the channel/webhook/guide if needed and prints what happened.
+    import yaml
+    from deal_alerts import CONFIG_PATH, load_secrets
+    load_secrets()
+    with open(CONFIG_PATH, encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+    st = {}
+    print("bot:", call("GET", f"{API}/users/@me", headers=bot_headers()).status_code)
+    print("result:", setup(config, st, bot_headers())[0] or "failed")
