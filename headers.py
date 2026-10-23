@@ -60,6 +60,13 @@ def main():
         old = [m for m in (pins.json() if pins.ok else [])
                if m.get("webhook_id") == hook_info.get("id")
                and any((e.get("footer") or {}).get("text") == GUIDE_FOOTER for e in m.get("embeds", []))]
+        # Extra, unpinned copies of the guide (e.g. from a run without a working bot token) are removed.
+        recent = call("GET", f"{API}/channels/{channel_id}/messages", headers=bot, params={"limit": 100})
+        for m in (recent.json() if recent.ok else []):
+            if not m.get("pinned") and m.get("webhook_id") == hook_info.get("id") \
+                    and any((e.get("footer") or {}).get("text") == GUIDE_FOOTER for e in m.get("embeds", [])):
+                call("DELETE", f"{hook}/messages/{m['id']}")
+                print(f"#{name}: removed duplicate guide")
         if old:
             r = call("PATCH", f"{hook}/messages/{old[0]['id']}", json=payload)
             print(f"#{name}: guide {'updated' if r.ok else f'not updated ({r.status_code})'}")
