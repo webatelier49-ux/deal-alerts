@@ -83,6 +83,11 @@ def setup(cfg, state, bot):
         hook = r.json()
     url = f"https://discord.com/api/webhooks/{hook['id']}/{hook['token']}"
 
+    v.update(channel_id=channel["id"], hook=url)
+    pins = call("GET", f"{API}/channels/{channel['id']}/pins", headers=bot)
+    if any((e.get("footer") or {}).get("text") == GUIDE_FOOTER
+           for m in (pins.json() if pins.ok else []) for e in m.get("embeds", [])):
+        return channel["id"], url  # guide is already pinned
     lines = [f"• {s['name']}: under €{round(s['ref_price'] * 0.5)}" for s in cfg["searches"]
              if s["channel"] in cfg.get("vinted_channels", []) and s.get("ref_price")]
     embed = {"author": {"name": "ALTERNATIVE RESELLING"}, "title": "🔎  Vinted Finds",
