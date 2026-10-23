@@ -14,7 +14,7 @@ on:
         default: false
 
 concurrency:
-  group: deal-alerts
+  group: deal-alerts-loop
   cancel-in-progress: false
 
 permissions:
