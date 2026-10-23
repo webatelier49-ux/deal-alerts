@@ -720,9 +720,15 @@ def main():
     flips = run_flips(ebay, cfg, state)
     hot = run_hot_deals(cfg, state)  # off by default: shop deals without a profit check
     free = run_free_deals(ebay, cfg, state)
+    try:
+        from vinted import run_vinted_finds
+        vinted = run_vinted_finds(ebay, cfg, state)
+    except Exception as e:  # a Discord hiccup here must never stop the deal posts
+        print(f"Vinted finds failed: {e}", file=sys.stderr)
+        vinted = 0
     send_digest()
     save_state(state)
-    print(f"Posted: {posted or 'nothing new'}; flips: {flips}; shop deals: {hot}; free-deals: {free}")
+    print(f"Posted: {posted or 'nothing new'}; flips: {flips}; shop deals: {hot}; free-deals: {free}; vinted checks: {vinted}")
 
 
 if __name__ == "__main__":

@@ -443,3 +443,16 @@ channel_info:
   pokemon-cards: ["⚡", "Pokémon Cards", "Pokémon collections and sealed product below market price."]
   trading-cards: ["🃏", "Trading Cards", "Yu-Gi-Oh! and Magic: The Gathering collections below market price."]
   tech-flips: ["💸", "Tech Flips", "Shop deals (Amazon, MediaMarkt, Saturn and more) that resell on eBay for a real profit after fees."]
+
+# #vinted-finds: Mitglieder posten Vinted-Funde mit Preis, der Bot antwortet mit eBay-Marktpreis und Gewinn.
+# Vinted selbst wird nicht ausgelesen (AGB). Kanal, Webhook und Anleitung legt vinted.py selbst an.
+vinted_finds:
+  enabled: true
+  buyer_fee_pct: 0.05       # Vinted-Käuferschutz ca. 5 % + 0,70 €
+  buyer_fee_fixed: 0.70
+  ebay_fee: 0.13
+  shipping_cost: 5
+  good_profit: 15           # ab hier „Good find“
+  min_comparables: 5
+  max_per_run: 10
+vinted_channels: [ralph-lauren, carhartt, the-north-face, levis, vintage-nike, designer, nike-dunks, adidas, new-balance]
