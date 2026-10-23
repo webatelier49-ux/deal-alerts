@@ -24,6 +24,12 @@ from deal_alerts import STATE_PATH, load_secrets, webhooks_from_env
 API = "https://discord.com/api/v10"
 
 
+def bot_token():
+    """The bot token, forgiving what often sneaks in when pasting it: spaces, quotes, a "Bot " prefix."""
+    t = os.environ.get("DISCORD_BOT_TOKEN", "").strip().strip('"\'').strip()
+    return t[4:].strip() if t.lower().startswith("bot ") else t
+
+
 def call(method, url, **kw):
     for _ in range(5):
         r = requests.request(method, url, timeout=30, **kw)
@@ -36,7 +42,7 @@ def call(method, url, **kw):
 
 def main():
     load_secrets()
-    token = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+    token = bot_token()
     if not token:
         sys.exit("DISCORD_BOT_TOKEN is missing")
     bot = {"Authorization": f"Bot {token}", "User-Agent": "DealAlertsCleanup (github actions, 1.0)"}

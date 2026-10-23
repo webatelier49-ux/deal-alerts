@@ -9,7 +9,7 @@ import sys
 
 import yaml
 
-from cleanup import API, call
+from cleanup import API, bot_token, call
 from deal_alerts import CONFIG_PATH, DEFAULT_COLOR, load_secrets, webhooks_from_env
 
 GUIDE_FOOTER = "Channel guide · Alternative Reselling"
@@ -26,7 +26,7 @@ HOW_TO_READ = (
 
 def main():
     load_secrets()
-    token = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+    token = bot_token()
     if not token:
         sys.exit("DISCORD_BOT_TOKEN is missing")
     bot = {"Authorization": f"Bot {token}", "User-Agent": "DealAlertsHeaders (github actions, 1.0)"}

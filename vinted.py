@@ -17,7 +17,7 @@ import sys
 
 import requests
 
-from cleanup import API, call
+from cleanup import API, bot_token, call
 from deal_alerts import (DEFAULT_COLOR, guild_id_for, item_query, now, sold_link, webhook_for)
 
 CHANNEL_NAME = "vinted-finds"
@@ -44,7 +44,7 @@ GUIDE_FOOTER = "Channel guide · Alternative Reselling"
 
 
 def bot_headers():
-    token = os.environ.get("DISCORD_BOT_TOKEN", "").strip()
+    token = bot_token()
     return {"Authorization": f"Bot {token}", "User-Agent": "DealAlertsVinted (github actions, 1.0)"} if token else None
 
 
